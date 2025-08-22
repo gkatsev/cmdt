@@ -26,6 +26,7 @@ export class HlsManifest implements ManifestParser {
 			audio: new UniqueRepresentationMap(),
 			images: new UniqueRepresentationMap(),
 			captionStreamToLanguage: {},
+			periods: [],
 		};
 
 		for (const rendition of master.mediaTags) {

@@ -21,6 +21,7 @@ export class Report {
 				audio: [],
 				images: [],
 				captionStreamToLanguage: {},
+				periods: [],
 			},
 			decodeTimeMismatches: [],
 			durationMismatches: [],

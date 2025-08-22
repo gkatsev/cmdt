@@ -28,6 +28,18 @@ export type Segment = {
 	rawSegmentTime?: number;
 };
 
+export type Period = {
+	id: string;
+	start: number;
+	absoluteStartMs?: number;
+	baseUrl?: string;
+	startString: string;
+	segmentsAvailable: number;
+	duration: number;
+	end: number;
+	startPrevEnd: boolean;
+};
+
 export enum MediaType {
 	Video = "video",
 	Audio = "audio",
@@ -93,6 +105,7 @@ export type Manifest = {
 	audio: UniqueRepresentationMap;
 	images: UniqueRepresentationMap;
 	captionStreamToLanguage: Record<string, string>;
+	periods: Array<Period>;
 };
 
 export function getMediaTypeFromMimeType(mimeType: string): MediaType {
