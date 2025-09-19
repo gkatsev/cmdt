@@ -1,0 +1,8 @@
+enum ECharSet {
+	BASIC_NORTH_AMERICAN = 0,
+	SPECIAL_NORTH_AMERICAN = 1,
+	SPANISH_FRENCH = 2,
+	PORTUGUESE_GERMAN = 3,
+}
+
+export default ECharSet;

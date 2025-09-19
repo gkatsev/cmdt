@@ -1,0 +1,41 @@
+name: Push Based Deploy
+
+on:
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+        contents: write
+        pages: write
+        id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          always-auth: 'true'
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+      - run: pnpm i
+      - name: Build Viewer
+        run: pnpm run build
+      - name: Build Pages Artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: ./viewer/out
+      - name: Deploy Pages Artifact
+        uses: actions/deploy-pages@v4.0.5

@@ -1,0 +1,39 @@
+{
+  "name": "cmdt",
+  "version": "0.1.4",
+  "description": "Common Media Diagnostic Tool",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NBCUDTC/cmdt.git"
+  },
+  "author": "nrcrast",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/NBCUDTC/cmdt/issues"
+  },
+  "homepage": "https://github.com/NBCUDTC/cmdt#readme",
+  "scripts": {
+    "lint": "pnpm -r --parallel run lint",
+    "package": "pnpm -r --parallel run package",
+    "typecheck": "pnpm -r --parallel run typecheck",
+    "test": "pnpm -r run test",
+    "clean": "pnpm -r exec -- rm -rf node_modules dist && rimraf node_modules",
+    "build": "pnpm -r run build",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "biome check --no-errors-on-unmatched --files-ignore-unknown=true"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "cross-env": "7.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "rimraf": "6.0.1"
+  },
+  "engines": {
+    "pnpm": "^9.1.0"
+  }
+}
