@@ -30,6 +30,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
 		"@commander-js/extra-typings": "^14.0.0",
+		"@fast-csv/parse": "^5.0.5",
 		"@supercharge/promise-pool": "^3.2.0",
 		"@types/cli-progress": "^3.11.6",
 		"@types/node": "^22.13.10",
