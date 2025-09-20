@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DashManifest > should parse a DASH manifest 1`] = `
+{
+  "audio": [],
+  "captionStreamToLanguage": {},
+  "images": [],
+  "url": "http://example.com/manifest.mpd",
+  "video": [],
+}
+`;
