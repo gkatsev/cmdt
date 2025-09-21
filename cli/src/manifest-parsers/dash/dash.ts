@@ -15,7 +15,7 @@ import winston from "winston";
 import { secondsToMilliseconds } from "../../utils/time-utils.js";
 import ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
 import getStreamAndLanguages from "../../utils/cea/getStreamAndLanguages.js";
-import {deepmerge} from "deepmerge-ts";
+import {deepmerge, deepmergeCustom} from "deepmerge-ts";
 export class DashManifest implements ManifestParser {
 	private logger: winston.Logger;
 	private manifest: Manifest;
@@ -148,23 +148,23 @@ export class DashManifest implements ManifestParser {
 	private getSegmentsFromSegmentTemplate(segmentTemplate: SegmentTemplate, representation: RawRepresentation): Array<Segment> {
 		const segments: Array<Segment> = [];
 
-		const mergedTemplate = deepmerge(representation.adaptationSet.segmentTemplate ?? {}, segmentTemplate);
+		const mergedTemplate = deepmergeCustom({mergeArrays: false})(representation.adaptationSet.segmentTemplate ?? {}, segmentTemplate);
 		
 		let n = mergedTemplate.startNumber ?? 1;
 		const periodStart =  representation.adaptationSet.period.start ?? 0;
 		const baseUrl = this.getBaseUrl(representation);
 		const timescale = mergedTemplate.timescale ?? 1;
 
-		for (const timeline of segmentTemplate.segmentTimeline?.s ?? []) {
+		for (const timeline of mergedTemplate.segmentTimeline?.s ?? []) {
 			const numSegments = timeline.r + 1;
-			const t = (timeline.t ?? 0) - (segmentTemplate.presentationTimeOffset ?? 0);
+			const t = (timeline.t ?? 0) - (mergedTemplate.presentationTimeOffset ?? 0);
 			const unscaledDuration = timeline.d ?? 0;
 			for (let i = 0; i < numSegments; i++) {
 				segments.push({
-					initSegmentUrl: segmentTemplate.initialization ? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, 	segmentTemplate.initialization) : undefined,
+					initSegmentUrl: mergedTemplate.initialization ? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, 	segmentTemplate.initialization) : undefined,
 					duration: secondsToMilliseconds(unscaledDuration / timescale),
 					startTime: secondsToMilliseconds(periodStart + (t + i * unscaledDuration) / timescale),
-					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, segmentTemplate.media!),
+					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.media!),
 					rawSegmentTime:secondsToMilliseconds(((timeline.t ?? 0) + i * unscaledDuration) / timescale),
 				});
 				n++;

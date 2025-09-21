@@ -398,6 +398,10 @@ function parseMultiSegmentBaseInformation(multiSegmentBaseInformationRoot: XmlNo
         availabilityTimeComplete: multiSegmentBaseInformationRoot.$.availabilityTimeComplete,
         representationIndex: parseUrl(multiSegmentBaseInformationRoot.RepresentationIndex?.[0]),
         timescale: multiSegmentBaseInformationRoot.$.timescale,
+        presentationTimeOffset: multiSegmentBaseInformationRoot.$.presentationTimeOffset,
+        presentationDuration: multiSegmentBaseInformationRoot.$.presentationDuration,
+        timeShiftBufferDepth: optionalDurationToSeconds(multiSegmentBaseInformationRoot.$.timeShiftBufferDepth),
+        
     }
 }
 
