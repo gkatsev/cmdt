@@ -33,6 +33,7 @@ export enum MediaType {
 	Audio = "audio",
 	Image = "image",
 	Text = "text",
+	Unknown = "unknown",
 }
 
 export interface BaseRepresentation {
@@ -60,11 +61,37 @@ export interface ImageRepresentation extends BaseRepresentation {
 
 export type Representation = BaseRepresentation | ImageRepresentation;
 
+export class UniqueRepresentationMap extends Map<string, Representation> {
+	public add(representation: Representation) {
+		const existing = this.get(representation.id);
+		if(!existing) {
+			this.set(representation.id, representation);
+			return;
+		}
+		existing.segments.push(...representation.segments);
+		existing.segments.sort((a, b) => a.startTime - b.startTime);
+		if(representation.hasCaptions.cea608) {
+			existing.hasCaptions.cea608 = true;
+		}
+		if(representation.hasCaptions.cea708) {
+			existing.hasCaptions.cea708 = true;
+		}
+	}
+
+	toArray(): Array<Representation> {
+		return Array.from(this.values());
+	}
+
+	toJSON(){
+		return this.toArray();
+	}
+}
+
 export type Manifest = {
 	url: URL;
-	video: Array<Representation>;
-	audio: Array<Representation>;
-	images: Array<Representation>;
+	video: UniqueRepresentationMap;
+	audio: UniqueRepresentationMap;
+	images:UniqueRepresentationMap;
 	captionStreamToLanguage: Record<string, string>;
 };
 

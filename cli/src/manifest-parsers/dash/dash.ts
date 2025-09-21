@@ -6,6 +6,7 @@ import {
 	MediaType,
 	type Representation,
 	type Segment,
+	UniqueRepresentationMap,
 } from "cmdt-shared";
 import { getInstance as getLogger } from "../../logger.js";
 import { AdaptationSet, Representation as RawRepresentation, getRawDashManifest, MPD, Period, ContentType, SegmentTimeline, SegmentTemplate } from "./raw-dash.js";
@@ -13,6 +14,8 @@ import { wrapUrl } from "../../utils/url.js";
 import winston from "winston";
 import { secondsToMilliseconds } from "../../utils/time-utils.js";
 import ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
+import getStreamAndLanguages from "../../utils/cea/getStreamAndLanguages.js";
+import {deepmerge} from "deepmerge-ts";
 export class DashManifest implements ManifestParser {
 	private logger: winston.Logger;
 	private manifest: Manifest;
@@ -20,9 +23,9 @@ export class DashManifest implements ManifestParser {
 		this.logger = getLogger();
 		this.manifest = {
 			url: wrapUrl("http://localhost"), // Placeholder
-			video: [],
-			audio: [],
-			images: [],
+			video: new UniqueRepresentationMap(),
+			audio: new UniqueRepresentationMap(),
+			images: 	new UniqueRepresentationMap(),
 			captionStreamToLanguage: {},
 		};
 	}
@@ -145,10 +148,7 @@ export class DashManifest implements ManifestParser {
 	private getSegmentsFromSegmentTemplate(segmentTemplate: SegmentTemplate, representation: RawRepresentation): Array<Segment> {
 		const segments: Array<Segment> = [];
 
-		const mergedTemplate = {
-			...representation.adaptationSet.segmentTemplate,
-			...segmentTemplate,
-		};
+		const mergedTemplate = deepmerge(representation.adaptationSet.segmentTemplate ?? {}, segmentTemplate);
 		
 		let n = mergedTemplate.startNumber ?? 1;
 		const periodStart =  representation.adaptationSet.period.start ?? 0;
@@ -199,7 +199,19 @@ export class DashManifest implements ManifestParser {
 			language: representation.adaptationSet.lang,
 			segments: this.getSegmentsFromRepresentation(representation),
 		}
-		this.manifest.video.push(videoRepresentation);
+		if (hasCea608 || hasCea708) {
+						if (!representation.adaptationSet.accessibility) {
+							throw new Error(`No accessibility information found for adaptation set ${representation.adaptationSet.id}`);
+						}
+						for(const accessibility of representation.adaptationSet.accessibility) {
+								const info = getStreamAndLanguages(accessibility);
+						for (const entry of info) {
+							this.manifest.captionStreamToLanguage[entry[0]] = entry[1];
+						}
+						}
+					
+					}
+		this.manifest.video.add(videoRepresentation);
 	}
 
 	private parseAudioRepresentation(representation: RawRepresentation): void {
@@ -208,7 +220,7 @@ export class DashManifest implements ManifestParser {
 			width: representation.width ?? representation.adaptationSet.width,
 			height: representation.height ?? representation.adaptationSet.height,
 			bandwidth: representation.bandwidth,
-			type: MediaType.Video,
+			type: MediaType.Audio,
 			hasCaptions: {
 				cea608: false,
 				cea708: false,
@@ -217,7 +229,7 @@ export class DashManifest implements ManifestParser {
 			language: representation.adaptationSet.lang,
 			segments: this.getSegmentsFromRepresentation(representation),
 		}
-		this.manifest.audio.push(audioRepresentation);
+		this.manifest.audio.add(audioRepresentation);
 	}
 
 	private parseRepresentation(representation: RawRepresentation): void {

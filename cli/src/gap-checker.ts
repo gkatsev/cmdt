@@ -68,6 +68,7 @@ export class GapChecker {
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the error here
 		} catch (e) {
 			// files don't exist
+			this.logger.error(`Files do not exist for segment ${segment.url}. Expected ${segment.fileSystemPath} and ${segment.initSegmentFilesystemPath}`);
 			return { decodeTime: 0, duration: 0 };
 		}
 		const initSegment = await fs.readFile(segment.initSegmentFilesystemPath);
@@ -116,7 +117,7 @@ export class GapChecker {
 	}
 
 	public async analyzeGaps(report: Report) {
-		const representations = [...this.manifest.audio, ...this.manifest.video].filter((r) => r.segments.length > 0);
+		const representations = [...this.manifest.audio.toArray(), ...this.manifest.video.toArray()].filter((r) => r.segments.length > 0);
 
 		const totalNumSegments = this.getTotalMediaSegments(representations);
 
