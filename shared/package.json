@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "pkgroll",
-		"lint": "biome check",
+		"lint": "biome lint && pnpm typecheck",
+		"format": "biome format",
 		"typecheck": "tsc --noEmit",
 		"package": "echo 'No package script for shared'",
 		"test": "echo 'No tests for shared'",

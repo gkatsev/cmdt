@@ -1,5 +1,12 @@
 import fs from "node:fs/promises";
-import { UniqueRepresentationMap, type Cue, type Manifest, type Report as RawReport, type Representation, type Segment } from "cmdt-shared";
+import {
+	type Cue,
+	type Manifest,
+	type Report as RawReport,
+	type Representation,
+	type Segment,
+	UniqueRepresentationMap,
+} from "cmdt-shared";
 import type IEmsg from "./utils/mp4/interfaces/IEmsg.js";
 
 export class Report {
@@ -10,9 +17,9 @@ export class Report {
 			duplicateThumbnails: {},
 			manifest: {
 				url: new URL("http://localhost"), // Placeholder
-				video: new UniqueRepresentationMap(),
-				audio: new UniqueRepresentationMap(),
-				images: 	new UniqueRepresentationMap(),
+				video: [],
+				audio: [],
+				images: [],
 				captionStreamToLanguage: {},
 			},
 			decodeTimeMismatches: [],
@@ -88,6 +95,12 @@ export class Report {
 		emsgsForRepresentation.emsgs.push(emsg);
 	}
 	public ingestManifest(manifest: Manifest) {
-		this.raw.manifest = manifest;
+		const { video, audio, images, ...rest } = manifest;
+		this.raw.manifest = {
+			...rest,
+			video: video.toArray(),
+			audio: audio.toArray(),
+			images: images.toArray(),
+		};
 	}
 }

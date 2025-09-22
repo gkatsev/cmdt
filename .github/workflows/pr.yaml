@@ -31,7 +31,7 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Format
-        run: pnpm biome
+        run: pnpm format
       - name: Package
         run: pnpm package
       - name: Upload Artifacts (Mac)

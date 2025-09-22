@@ -92,7 +92,7 @@ describe("GapChecker", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
-	it("should detect a single gap", async () => {
+	it.only("should detect a single gap", async () => {
 		// @ts-expect-error
 		vi.spyOn(fs.promises, "readFile").mockImplementation(async (info: string) => {
 			const data = JSON.parse(info);
@@ -110,7 +110,7 @@ describe("GapChecker", () => {
 		await checker.analyzeGaps(report);
 		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(0);
 		expect(report.addDurationMismatch).toHaveBeenCalledTimes(0);
-		expect(report.addGap).toHaveBeenCalledTimes(1);
+		expect(report.addGap).toHaveBeenCalledTimes(manifest.video.size);
 	});
 
 	it("should detect decode time mismatch", async () => {

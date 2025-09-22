@@ -1,8 +1,5 @@
-import { parse } from "@fast-csv/parse";
-import axios from "axios";
-import fs from "fs";
-import { beforeAll, describe, expect, it } from "vitest";
-import { getTestFile, writeTestFile } from "../../../test/utils.js";
+import { describe, expect, it } from "vitest";
+import { getTestFile } from "../../../test/utils.js";
 import { DashManifest } from "./dash.js";
 
 describe("DashManifest", () => {
@@ -11,7 +8,6 @@ describe("DashManifest", () => {
 		const testManifest = await getTestFile("manifests/dash-multiperiod.mpd");
 		const parser = new DashManifest();
 		const manifest = await parser.parse(testManifest, manifestUrl);
-		console.log(JSON.stringify(manifest, null, 2));
 		expect(manifest).toMatchSnapshot();
 	});
 	// describe("DASH-IF test vectors", async () => {

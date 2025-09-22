@@ -61,18 +61,19 @@ export class SegmentDownloader {
 					responseType: "arraybuffer",
 				});
 
-				const exists = await fs.access(path.resolve(download.destDir, download.destFile), fs.constants.R_OK | fs.constants.W_OK)
+				const exists = await fs
+					.access(path.resolve(download.destDir, download.destFile), fs.constants.R_OK | fs.constants.W_OK)
 					.then(() => true)
 					.catch(() => false);
-				
-					if(exists) {
-						this.logger.warn(`File already exists: ${download.destFile}. Skipping download.`);
-						if (showProgress) {
-							downloadProgressBar.increment();
-						}
-						return;
+
+				if (exists) {
+					this.logger.warn(`File already exists: ${download.destFile}. Skipping download.`);
+					if (showProgress) {
+						downloadProgressBar.increment();
 					}
-				
+					return;
+				}
+
 				await fs.writeFile(path.resolve(download.destDir, download.destFile), response.data);
 
 				if (showProgress) {
@@ -97,7 +98,7 @@ export class SegmentDownloader {
 		const manifest = this.manifest;
 		const dlDirBase = getOpts().output;
 		const downloads: Array<DownloadEntry> = [];
-		const mediaTypes = [manifest.audio, manifest.images, manifest.video].map((r => r.toArray()));
+		const mediaTypes = [manifest.audio, manifest.images, manifest.video].map((r) => r.toArray());
 		const initSegments = new Map<string, string>();
 		for (const mediaType of mediaTypes) {
 			for (const representation of mediaType) {

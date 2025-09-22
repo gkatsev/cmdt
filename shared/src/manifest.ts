@@ -64,16 +64,16 @@ export type Representation = BaseRepresentation | ImageRepresentation;
 export class UniqueRepresentationMap extends Map<string, Representation> {
 	public add(representation: Representation) {
 		const existing = this.get(representation.id);
-		if(!existing) {
+		if (!existing) {
 			this.set(representation.id, representation);
 			return;
 		}
 		existing.segments.push(...representation.segments);
 		existing.segments.sort((a, b) => a.startTime - b.startTime);
-		if(representation.hasCaptions.cea608) {
+		if (representation.hasCaptions.cea608) {
 			existing.hasCaptions.cea608 = true;
 		}
-		if(representation.hasCaptions.cea708) {
+		if (representation.hasCaptions.cea708) {
 			existing.hasCaptions.cea708 = true;
 		}
 	}
@@ -82,7 +82,7 @@ export class UniqueRepresentationMap extends Map<string, Representation> {
 		return Array.from(this.values());
 	}
 
-	toJSON(){
+	toJSON() {
 		return this.toArray();
 	}
 }
@@ -91,7 +91,7 @@ export type Manifest = {
 	url: URL;
 	video: UniqueRepresentationMap;
 	audio: UniqueRepresentationMap;
-	images:UniqueRepresentationMap;
+	images: UniqueRepresentationMap;
 	captionStreamToLanguage: Record<string, string>;
 };
 

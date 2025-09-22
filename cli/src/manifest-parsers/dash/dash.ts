@@ -8,14 +8,22 @@ import {
 	type Segment,
 	UniqueRepresentationMap,
 } from "cmdt-shared";
+import { deepmergeCustom } from "deepmerge-ts";
+import type winston from "winston";
 import { getInstance as getLogger } from "../../logger.js";
-import { AdaptationSet, Representation as RawRepresentation, getRawDashManifest, MPD, Period, ContentType, SegmentTimeline, SegmentTemplate } from "./raw-dash.js";
-import { wrapUrl } from "../../utils/url.js";
-import winston from "winston";
-import { secondsToMilliseconds } from "../../utils/time-utils.js";
-import ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
 import getStreamAndLanguages from "../../utils/cea/getStreamAndLanguages.js";
-import {deepmerge, deepmergeCustom} from "deepmerge-ts";
+import ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
+import { secondsToMilliseconds } from "../../utils/time-utils.js";
+import { wrapUrl } from "../../utils/url.js";
+import {
+	type AdaptationSet,
+	type ContentType,
+	getRawDashManifest,
+	type MPD,
+	type Period,
+	type Representation as RawRepresentation,
+	type SegmentTemplate,
+} from "./raw-dash.js";
 export class DashManifest implements ManifestParser {
 	private logger: winston.Logger;
 	private manifest: Manifest;
@@ -25,18 +33,18 @@ export class DashManifest implements ManifestParser {
 			url: wrapUrl("http://localhost"), // Placeholder
 			video: new UniqueRepresentationMap(),
 			audio: new UniqueRepresentationMap(),
-			images: 	new UniqueRepresentationMap(),
+			images: new UniqueRepresentationMap(),
 			captionStreamToLanguage: {},
 		};
 	}
 	public async parse(manifest: string, manifestUrl: string): Promise<Manifest> {
-		const mpd = await getRawDashManifest(manifest, manifestUrl);
+		const mpd = await getRawDashManifest(manifest);
 		this.manifest.url = new URL(manifestUrl);
-		this.manifest = this.parseRawManifest(mpd, manifestUrl);
+		this.manifest = this.parseRawManifest(mpd);
 		return this.manifest;
 	}
 
-	private parseRawManifest(mpd: MPD, manifestUrl: string): Manifest {
+	private parseRawManifest(mpd: MPD): Manifest {
 		for (const period of mpd.periods) {
 			this.processPeriod(period);
 		}
@@ -109,63 +117,75 @@ export class DashManifest implements ManifestParser {
 	private getBaseUrl(representation: RawRepresentation): string {
 		let baseUrls: Array<string> = [];
 
-		if (representation.adaptationSet.period.manifest.baseUrl) {
-			baseUrls.push(representation.adaptationSet.period.manifest.baseUrl[0]!.url);
+		if (representation.adaptationSet.period.manifest.baseUrl?.[0]) {
+			baseUrls.push(representation.adaptationSet.period.manifest.baseUrl[0].url);
 		}
 
-		if (representation.adaptationSet.period.baseUrl) {
-			baseUrls.push(representation.adaptationSet.period.baseUrl[0]!.url);
+		if (representation.adaptationSet.period.baseUrl?.[0]) {
+			baseUrls.push(representation.adaptationSet.period.baseUrl[0].url);
 		}
 
-		if (representation.adaptationSet.baseUrl) {
-			baseUrls.push(representation.adaptationSet.baseUrl[0]!.url);
+		if (representation.adaptationSet.baseUrl?.[0]) {
+			baseUrls.push(representation.adaptationSet.baseUrl[0].url);
 		}
 
-		if (representation.baseUrl) {
-			baseUrls.push(representation.baseUrl[0]!.url);
+		if (representation.baseUrl?.[0]) {
+			baseUrls.push(representation.baseUrl[0].url);
 		}
 
 		const firstAbsolute = baseUrls.findIndex((url) => url.startsWith("http"));
 
-		if(firstAbsolute >= 0) {
+		if (firstAbsolute >= 0) {
 			baseUrls = baseUrls.slice(firstAbsolute);
 		} else {
-			baseUrls = [this.manifest.url.href, ...baseUrls]
+			baseUrls = [this.manifest.url.href, ...baseUrls];
 		}
 
 		let absoluteBase = new URL(this.manifest.url.href);
-		for(const baseUrl of baseUrls) {
-			if(baseUrl.startsWith("http")) {
+		for (const baseUrl of baseUrls) {
+			if (baseUrl.startsWith("http")) {
 				absoluteBase = new URL(baseUrl);
 			} else {
 				absoluteBase = new URL(baseUrl, absoluteBase);
 			}
 		}
 		return absoluteBase.href;
-
 	}
 
-	private getSegmentsFromSegmentTemplate(segmentTemplate: SegmentTemplate, representation: RawRepresentation): Array<Segment> {
+	private getSegmentsFromSegmentTemplate(
+		segmentTemplate: SegmentTemplate,
+		representation: RawRepresentation,
+	): Array<Segment> {
 		const segments: Array<Segment> = [];
 
-		const mergedTemplate = deepmergeCustom({mergeArrays: false})(representation.adaptationSet.segmentTemplate ?? {}, segmentTemplate);
-		
+		const mergedTemplate = deepmergeCustom({ mergeArrays: false })(
+			representation.adaptationSet.segmentTemplate ?? {},
+			segmentTemplate,
+		);
+
 		let n = mergedTemplate.startNumber ?? 1;
-		const periodStart =  representation.adaptationSet.period.start ?? 0;
+		const periodStart = representation.adaptationSet.period.start ?? 0;
 		const baseUrl = this.getBaseUrl(representation);
 		const timescale = mergedTemplate.timescale ?? 1;
 
+		if (!mergedTemplate.media) {
+			this.logger.warn(`No media template for representation ${representation.id}`);
+			return [];
+		}
+
 		for (const timeline of mergedTemplate.segmentTimeline?.s ?? []) {
 			const numSegments = timeline.r + 1;
-			const t = (timeline.t ?? 0) - (mergedTemplate.presentationTimeOffset ?? 0);
+			const tWithOffset = (timeline.t ?? 0) - (mergedTemplate.presentationTimeOffset ?? 0);
 			const unscaledDuration = timeline.d ?? 0;
 			for (let i = 0; i < numSegments; i++) {
 				segments.push({
-					initSegmentUrl: mergedTemplate.initialization ? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, 	segmentTemplate.initialization) : undefined,
+					initSegmentUrl: mergedTemplate.initialization
+						? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.initialization)
+						: undefined,
 					duration: secondsToMilliseconds(unscaledDuration / timescale),
-					startTime: secondsToMilliseconds(periodStart + (t + i * unscaledDuration) / timescale),
-					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.media!),
-					rawSegmentTime:secondsToMilliseconds(((timeline.t ?? 0) + i * unscaledDuration) / timescale),
+					startTime: secondsToMilliseconds(periodStart + (tWithOffset + i * unscaledDuration) / timescale),
+					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.media),
+					rawSegmentTime: secondsToMilliseconds(((timeline.t ?? 0) + i * unscaledDuration) / timescale),
 				});
 				n++;
 			}
@@ -175,7 +195,7 @@ export class DashManifest implements ManifestParser {
 	}
 
 	private getSegmentsFromRepresentation(representation: RawRepresentation): Array<Segment> {
-		if (representation.segmentTemplate) {
+		if (representation.segmentTemplate || representation.adaptationSet.segmentTemplate) {
 			return this.getSegmentsFromSegmentTemplate(representation.segmentTemplate, representation);
 		}
 		this.logger.warn(`No segment template for representation ${representation.id}`);
@@ -198,24 +218,23 @@ export class DashManifest implements ManifestParser {
 			codecs: representation.codecs ?? representation.adaptationSet.codecs,
 			language: representation.adaptationSet.lang,
 			segments: this.getSegmentsFromRepresentation(representation),
-		}
+		};
 		if (hasCea608 || hasCea708) {
-						if (!representation.adaptationSet.accessibility) {
-							throw new Error(`No accessibility information found for adaptation set ${representation.adaptationSet.id}`);
-						}
-						for(const accessibility of representation.adaptationSet.accessibility) {
-								const info = getStreamAndLanguages(accessibility);
-						for (const entry of info) {
-							this.manifest.captionStreamToLanguage[entry[0]] = entry[1];
-						}
-						}
-					
-					}
+			if (!representation.adaptationSet.accessibility) {
+				throw new Error(`No accessibility information found for adaptation set ${representation.adaptationSet.id}`);
+			}
+			for (const accessibility of representation.adaptationSet.accessibility) {
+				const info = getStreamAndLanguages(accessibility);
+				for (const entry of info) {
+					this.manifest.captionStreamToLanguage[entry[0]] = entry[1];
+				}
+			}
+		}
 		this.manifest.video.add(videoRepresentation);
 	}
 
 	private parseAudioRepresentation(representation: RawRepresentation): void {
-				const audioRepresentation: Representation = {
+		const audioRepresentation: Representation = {
 			id: representation.id,
 			width: representation.width ?? representation.adaptationSet.width,
 			height: representation.height ?? representation.adaptationSet.height,
@@ -228,12 +247,53 @@ export class DashManifest implements ManifestParser {
 			codecs: representation.codecs ?? representation.adaptationSet.codecs,
 			language: representation.adaptationSet.lang,
 			segments: this.getSegmentsFromRepresentation(representation),
-		}
+		};
 		this.manifest.audio.add(audioRepresentation);
 	}
 
+	private parseImageRepresentation(representation: RawRepresentation): void {
+		let dashThumbProperty = representation.essentialProperty?.find(
+			(e) => e.schemeIdUri === "http://dashif.org/guidelines/thumbnail_tile",
+		);
+		if (!dashThumbProperty) {
+			dashThumbProperty = representation.adaptationSet.essentialProperty?.find(
+				(e) => e.schemeIdUri === "http://dashif.org/guidelines/thumbnail_tile",
+			);
+		}
+
+		if (!dashThumbProperty?.value) {
+			this.logger.warn(`No thumbnail tile information found for representation ${representation.id}`);
+			return;
+		}
+
+		const [cols, rows] = dashThumbProperty.value.split("x").map((val) => Number.parseInt(val, 10));
+
+		if (!cols || !rows) {
+			this.logger.warn(`Invalid thumbnail tile information found for representation ${representation.id}`);
+			return;
+		}
+
+		const imageRepresentation: ImageRepresentation = {
+			id: representation.id,
+			width: representation.width ?? representation.adaptationSet.width,
+			height: representation.height ?? representation.adaptationSet.height,
+			bandwidth: representation.bandwidth,
+			type: MediaType.Image,
+			hasCaptions: {
+				cea608: false,
+				cea708: false,
+			},
+			codecs: representation.codecs ?? representation.adaptationSet.codecs,
+			language: representation.adaptationSet.lang,
+			imageRows: rows,
+			imageCols: cols,
+			segments: this.getSegmentsFromRepresentation(representation),
+		};
+		this.manifest.images.add(imageRepresentation);
+	}
+
 	private parseRepresentation(representation: RawRepresentation): void {
-		let mediaType: MediaType = this.getMediaTypeFromRepresentation(representation);
+		const mediaType: MediaType = this.getMediaTypeFromRepresentation(representation);
 		switch (mediaType) {
 			case MediaType.Video:
 				this.parseVideoRepresentation(representation);
@@ -241,9 +301,9 @@ export class DashManifest implements ManifestParser {
 			case MediaType.Audio:
 				this.parseAudioRepresentation(representation);
 				break;
-			// case MediaType.Image:
-			// 	this.parseImageRepresentation(representation);
-			// 	break;
+			case MediaType.Image:
+				this.parseImageRepresentation(representation);
+				break;
 			// case MediaType.Text:
 			// 	this.parseTextRepresentation(representation);
 			// 	break;

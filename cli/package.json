@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "pkgroll",
-		"lint": "biome check",
+		"lint": "biome lint && pnpm typecheck",
+		"format": "biome format",
 		"typecheck": "tsc --noEmit",
 		"package": "rm -rf bin && mkdir bin && pkg dist/index.cjs --output bin/cmdt --target node22-linux-arm64,node22-macos-arm64,node22-win-arm64",
 		"start": "tsx src/index.ts",

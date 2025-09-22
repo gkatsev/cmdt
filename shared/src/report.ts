@@ -1,5 +1,5 @@
 import type { Cue } from "./cue.js";
-import type { Manifest, Segment } from "./manifest.js";
+import type { Manifest, Representation, Segment } from "./manifest.js";
 
 export type RepresentationId = string;
 
@@ -41,7 +41,11 @@ export type Report = {
 	mediaStreamValidator?: Object;
 	// biome-ignore lint/complexity/noBannedTypes: The type is passthrough
 	dashConformance?: Object;
-	manifest: Manifest;
+	manifest: Omit<Manifest, "video" | "audio" | "images"> & {
+		video: Array<Representation>;
+		audio: Array<Representation>;
+		images: Array<Representation>;
+	};
 	captions?: {
 		[stream: string]: Array<Cue>;
 	};

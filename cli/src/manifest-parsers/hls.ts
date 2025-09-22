@@ -1,4 +1,10 @@
-import { type Manifest, type ManifestParser, MediaType, type Representation, UniqueRepresentationMap } from "cmdt-shared";
+import {
+	type Manifest,
+	type ManifestParser,
+	MediaType,
+	type Representation,
+	UniqueRepresentationMap,
+} from "cmdt-shared";
 import type winston from "winston";
 import { getInstance as getLogger } from "../logger.js";
 import { wrapUrl } from "../utils/url.js";
@@ -17,7 +23,7 @@ export class HlsManifest implements ManifestParser {
 		const commonManifest: Manifest = {
 			url: wrapUrl(manifestUrl),
 			video: new UniqueRepresentationMap(),
-			audio: 	new UniqueRepresentationMap(),
+			audio: new UniqueRepresentationMap(),
 			images: new UniqueRepresentationMap(),
 			captionStreamToLanguage: {},
 		};

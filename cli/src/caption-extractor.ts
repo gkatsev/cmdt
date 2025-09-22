@@ -101,10 +101,7 @@ export class CaptionExtractor {
 			this.report.addCaptionStream(captionStream, this.captions[captionStream]?.cues ?? []);
 			const capsFile = path.resolve(getOpts().output, "captions", filename);
 			await fs.mkdir(path.dirname(capsFile), { recursive: true });
-			await fs.writeFile(
-				capsFile,
-				JSON.stringify(this.captions[captionStream]?.cues, null, 2),
-			);
+			await fs.writeFile(capsFile, JSON.stringify(this.captions[captionStream]?.cues, null, 2));
 		}
 	}
 
