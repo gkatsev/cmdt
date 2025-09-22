@@ -92,7 +92,7 @@ describe("GapChecker", () => {
 	afterEach(() => {
 		vi.restoreAllMocks();
 	});
-	it.only("should detect a single gap", async () => {
+	it("should detect a single gap", async () => {
 		// @ts-expect-error
 		vi.spyOn(fs.promises, "readFile").mockImplementation(async (info: string) => {
 			const data = JSON.parse(info);
