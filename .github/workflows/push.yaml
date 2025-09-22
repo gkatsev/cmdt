@@ -72,6 +72,7 @@ jobs:
 
   release:
     needs: [build, test, check-version]
+    runs-on: macos-latest
     if: ${{ needs.check-version.outputs.changed == 'true' }}
     permissions:
         contents: write
