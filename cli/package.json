@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build": "pkgroll",
-		"lint": "biome check",
+		"lint": "biome lint && pnpm typecheck",
+		"format": "biome format",
 		"typecheck": "tsc --noEmit",
 		"package": "rm -rf bin && mkdir bin && pkg dist/index.cjs --output bin/cmdt --target node22-linux-arm64,node22-macos-arm64,node22-win-arm64",
 		"start": "tsx src/index.ts",
@@ -30,6 +31,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.2.4",
 		"@commander-js/extra-typings": "^14.0.0",
+		"@fast-csv/parse": "^5.0.5",
 		"@supercharge/promise-pool": "^3.2.0",
 		"@types/cli-progress": "^3.11.6",
 		"@types/node": "^22.13.10",
@@ -41,7 +43,7 @@
 		"cli-progress": "^3.12.0",
 		"cmdt-shared": "workspace:cmdt-shared",
 		"commander": "^13.1.0",
-		"deepmerge": "^4.3.1",
+		"deepmerge-ts": "^7.1.5",
 		"iso8601-duration": "^2.1.2",
 		"jimp": "^1.6.0",
 		"json-diff-ts": "^4.2.0",

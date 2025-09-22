@@ -27,7 +27,7 @@ export class CaptionExtractor {
 		const showProgress = ["info", "debug"].includes(getOpts().logLevel);
 		const captionsProgress = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-		const numSegments = this.manifest.video.reduce((acc, representation) => {
+		const numSegments = this.manifest.video.toArray().reduce((acc, representation) => {
 			return acc + representation.segments.length;
 		}, 0);
 		if (showProgress) {
@@ -35,7 +35,7 @@ export class CaptionExtractor {
 		}
 		await mkdirp(path.resolve(getOpts().output, "captions"));
 
-		for (const representation of this.manifest.video) {
+		for (const representation of this.manifest.video.values()) {
 			const captionUri = representation.hasCaptions.cea608 ? ECeaSchemeUri.CEA608 : ECeaSchemeUri.CEA708;
 			const parsers = new Map<string, CeaParser>();
 			for (const segment of representation.segments) {
@@ -74,7 +74,7 @@ export class CaptionExtractor {
 
 				for (const caption of captions) {
 					const stream = caption.id.split("_").pop() ?? "unknown";
-					const key = `${stream}_${representation.id}`;
+					const key = `${stream}_${representation.id.replaceAll("/", "-")}`;
 					if (!this.captions[key]) {
 						this.captions[key] = { stream, cues: [] };
 					}
@@ -99,10 +99,9 @@ export class CaptionExtractor {
 				filename = `captions-${lang}-${captionStream}.json`;
 			}
 			this.report.addCaptionStream(captionStream, this.captions[captionStream]?.cues ?? []);
-			await fs.writeFile(
-				path.resolve(getOpts().output, "captions", filename),
-				JSON.stringify(this.captions[captionStream]?.cues, null, 2),
-			);
+			const capsFile = path.resolve(getOpts().output, "captions", filename);
+			await fs.mkdir(path.dirname(capsFile), { recursive: true });
+			await fs.writeFile(capsFile, JSON.stringify(this.captions[captionStream]?.cues, null, 2));
 		}
 	}
 

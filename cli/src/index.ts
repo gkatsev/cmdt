@@ -10,7 +10,7 @@ import { SegmentDownloader } from "./downloader.js";
 import { EmsgExtractor } from "./emsg-extractor.js";
 import { GapChecker } from "./gap-checker.js";
 import { getInstance as getLogger } from "./logger.js";
-import { DashManifest } from "./manifest-parsers/dash.js";
+import { DashManifest } from "./manifest-parsers/dash/dash.js";
 import { HlsManifest } from "./manifest-parsers/hls.js";
 import { MediaStreamValidator } from "./media-stream-validator/media-stream-validator.js";
 import { Report } from "./report.js";

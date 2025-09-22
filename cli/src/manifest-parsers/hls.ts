@@ -1,4 +1,10 @@
-import { type Manifest, type ManifestParser, MediaType, type Representation } from "cmdt-shared";
+import {
+	type Manifest,
+	type ManifestParser,
+	MediaType,
+	type Representation,
+	UniqueRepresentationMap,
+} from "cmdt-shared";
 import type winston from "winston";
 import { getInstance as getLogger } from "../logger.js";
 import { wrapUrl } from "../utils/url.js";
@@ -16,18 +22,18 @@ export class HlsManifest implements ManifestParser {
 
 		const commonManifest: Manifest = {
 			url: wrapUrl(manifestUrl),
-			video: [],
-			audio: [],
-			images: [],
+			video: new UniqueRepresentationMap(),
+			audio: new UniqueRepresentationMap(),
+			images: new UniqueRepresentationMap(),
 			captionStreamToLanguage: {},
 		};
 
 		for (const rendition of master.mediaTags) {
 			if (rendition.playlist) {
 				if (rendition.type === "VIDEO") {
-					commonManifest.video.push(this.getRepresentationFromMedia(rendition, master.streamInfTags));
+					commonManifest.video.add(this.getRepresentationFromMedia(rendition, master.streamInfTags));
 				} else if (rendition.type === "AUDIO") {
-					commonManifest.audio.push(this.getRepresentationFromMedia(rendition, master.streamInfTags));
+					commonManifest.audio.add(this.getRepresentationFromMedia(rendition, master.streamInfTags));
 				} else if (rendition.type === "SUBTITLES") {
 					this.logger.warn("WebVTT subtitles not supported");
 				}
@@ -48,7 +54,7 @@ export class HlsManifest implements ManifestParser {
 					this.logger.info(`Already parsed child playlist ${variant.uri}`);
 					continue;
 				}
-				commonManifest.video.push(this.getRepresentationFromVariant(variant, master.mediaTags));
+				commonManifest.video.add(this.getRepresentationFromVariant(variant, master.mediaTags));
 			}
 		}
 
@@ -57,7 +63,7 @@ export class HlsManifest implements ManifestParser {
 				this.logger.warn(`Image stream ${variant.uri} does not have image layout information`);
 				continue;
 			}
-			commonManifest.images.push({
+			commonManifest.images.add({
 				bandwidth: variant.bandwidth,
 				id: `${variant.bandwidth}`,
 				type: MediaType.Image,

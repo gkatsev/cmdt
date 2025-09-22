@@ -3,7 +3,7 @@ import { fs } from "memfs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getBinaryTestFile, getTestFile } from "../test/utils.js";
 import { GapChecker } from "./gap-checker.js";
-import { DashManifest } from "./manifest-parsers/dash.js";
+import { DashManifest } from "./manifest-parsers/dash/dash.js";
 import { Report } from "./report.js";
 import type IParsedBox from "./utils/mp4/interfaces/IParsedBox.js";
 import Mp4Parser from "./utils/mp4/parser.js";
@@ -78,7 +78,7 @@ describe("GapChecker", () => {
 		report = new Report();
 
 		// Fake segment file paths
-		for (const representation of [...manifest.audio, ...manifest.video]) {
+		for (const representation of [...manifest.audio.toArray(), ...manifest.video.toArray()]) {
 			for (const segment of representation.segments) {
 				segment.fileSystemPath = JSON.stringify({
 					type: "segment",
@@ -110,7 +110,7 @@ describe("GapChecker", () => {
 		await checker.analyzeGaps(report);
 		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(0);
 		expect(report.addDurationMismatch).toHaveBeenCalledTimes(0);
-		expect(report.addGap).toHaveBeenCalledTimes(1);
+		expect(report.addGap).toHaveBeenCalledTimes(manifest.video.size);
 	});
 
 	it("should detect decode time mismatch", async () => {
@@ -126,7 +126,7 @@ describe("GapChecker", () => {
 
 		vi.spyOn(report, "addDecodeTimeMismatch");
 		await checker.analyzeGaps(report);
-		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(2987);
+		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(1953);
 	});
 
 	it("should detect segment duration mismatch", async () => {
@@ -143,6 +143,6 @@ describe("GapChecker", () => {
 
 		vi.spyOn(report, "addDurationMismatch");
 		await checker.analyzeGaps(report);
-		expect(report.addDurationMismatch).toHaveBeenCalledTimes(2987);
+		expect(report.addDurationMismatch).toHaveBeenCalledTimes(1953);
 	});
 });

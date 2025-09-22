@@ -8,7 +8,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -31,21 +31,4 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Format
-        run: pnpm biome
-      - name: Package
-        run: pnpm package
-      - name: Upload Artifacts (Mac)
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmdt-macos
-          path: cli/bin/cmdt-macos
-      - name: Upload Artifacts (Linux)
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmdt-linux
-          path: cli/bin/cmdt-linux
-      - name: Upload Artifacts (Win)
-        uses: actions/upload-artifact@v4
-        with:
-          name: cmdt-win
-          path: cli/bin/cmdt-win.exe
+        run: pnpm format
