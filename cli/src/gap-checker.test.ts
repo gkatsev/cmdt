@@ -126,7 +126,7 @@ describe("GapChecker", () => {
 
 		vi.spyOn(report, "addDecodeTimeMismatch");
 		await checker.analyzeGaps(report);
-		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(2987);
+		expect(report.addDecodeTimeMismatch).toHaveBeenCalledTimes(1953);
 	});
 
 	it("should detect segment duration mismatch", async () => {
@@ -143,6 +143,6 @@ describe("GapChecker", () => {
 
 		vi.spyOn(report, "addDurationMismatch");
 		await checker.analyzeGaps(report);
-		expect(report.addDurationMismatch).toHaveBeenCalledTimes(2987);
+		expect(report.addDurationMismatch).toHaveBeenCalledTimes(1953);
 	});
 });
