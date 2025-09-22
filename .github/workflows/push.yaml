@@ -17,6 +17,18 @@ jobs:
       version: ${{ steps.check-version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          always-auth: 'true'
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
       - name: Check Version
         id: check-version
         uses: EndBug/version-check@v2
