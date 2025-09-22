@@ -70,47 +70,47 @@ jobs:
       - run: pnpm i
       - run: pnpm test
 
-release:
-  needs: [build, test, check-version]
-  if: ${{ needs.check-version.outputs.changed == 'true' }}
-  permissions:
-      contents: write
-      pages: write
-      id-token: write
-  steps:
-    - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
-      name: Install pnpm
-      with:
-        version: 9
-        run_install: false
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        always-auth: 'true'
-        node-version-file: '.nvmrc'
-        cache: 'pnpm'
-        cache-dependency-path: 'pnpm-lock.yaml'
-    - run: pnpm i
-    - name: Build Viewer
-      run: pnpm run build
-    - name: Build Pages Artifact
-      uses: actions/upload-pages-artifact@v3.0.1
-      with:
-        path: ./viewer/out
-    - name: Deploy Pages Artifact
-      uses: actions/deploy-pages@v4.0.5
-    - name: Package
-      run: pnpm package
-    - name: Bump version and push tag
-      id: tag_version
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        custom_tag: ${{ steps.check-version.outputs.version }}
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-    - uses: ncipollo/release-action@v1
-      with:
-        artifacts: "cli/bin/*"
-        tag: ${{ steps.tag_version.outputs.new_tag }}
-        name: Release ${{ steps.tag_version.outputs.new_tag }}
-        body: ${{ steps.tag_version.outputs.changelog }}
+  release:
+    needs: [build, test, check-version]
+    if: ${{ needs.check-version.outputs.changed == 'true' }}
+    permissions:
+        contents: write
+        pages: write
+        id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          version: 9
+          run_install: false
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          always-auth: 'true'
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+      - run: pnpm i
+      - name: Build Viewer
+        run: pnpm run build
+      - name: Build Pages Artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: ./viewer/out
+      - name: Deploy Pages Artifact
+        uses: actions/deploy-pages@v4.0.5
+      - name: Package
+        run: pnpm package
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          custom_tag: ${{ steps.check-version.outputs.version }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: ncipollo/release-action@v1
+        with:
+          artifacts: "cli/bin/*"
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
