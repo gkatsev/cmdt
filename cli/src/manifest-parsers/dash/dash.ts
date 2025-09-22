@@ -153,38 +153,33 @@ export class DashManifest implements ManifestParser {
 	}
 
 	private getSegmentsFromSegmentTemplate(
-		segmentTemplate: SegmentTemplate,
 		representation: RawRepresentation,
+		segmentTemplate: SegmentTemplate,
 	): Array<Segment> {
 		const segments: Array<Segment> = [];
 
-		const mergedTemplate = deepmergeCustom({ mergeArrays: false })(
-			representation.adaptationSet.segmentTemplate ?? {},
-			segmentTemplate,
-		);
-
-		let n = mergedTemplate.startNumber ?? 1;
+		let n = segmentTemplate.startNumber ?? 1;
 		const periodStart = representation.adaptationSet.period.start ?? 0;
 		const baseUrl = this.getBaseUrl(representation);
-		const timescale = mergedTemplate.timescale ?? 1;
+		const timescale = segmentTemplate.timescale ?? 1;
 
-		if (!mergedTemplate.media) {
+		if (!segmentTemplate.media) {
 			this.logger.warn(`No media template for representation ${representation.id}`);
 			return [];
 		}
 
-		for (const timeline of mergedTemplate.segmentTimeline?.s ?? []) {
+		for (const timeline of segmentTemplate.segmentTimeline?.s ?? []) {
 			const numSegments = timeline.r + 1;
-			const tWithOffset = (timeline.t ?? 0) - (mergedTemplate.presentationTimeOffset ?? 0);
+			const tWithOffset = (timeline.t ?? 0) - (segmentTemplate.presentationTimeOffset ?? 0);
 			const unscaledDuration = timeline.d ?? 0;
 			for (let i = 0; i < numSegments; i++) {
 				segments.push({
-					initSegmentUrl: mergedTemplate.initialization
-						? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.initialization)
+					initSegmentUrl: segmentTemplate.initialization
+						? this.buildSegmentUrlFromTemplate(baseUrl, n, representation, segmentTemplate.initialization)
 						: undefined,
 					duration: secondsToMilliseconds(unscaledDuration / timescale),
 					startTime: secondsToMilliseconds(periodStart + (tWithOffset + i * unscaledDuration) / timescale),
-					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, mergedTemplate.media),
+					url: this.buildSegmentUrlFromTemplate(baseUrl, n, representation, segmentTemplate.media),
 					rawSegmentTime: secondsToMilliseconds(((timeline.t ?? 0) + i * unscaledDuration) / timescale),
 				});
 				n++;
@@ -196,7 +191,11 @@ export class DashManifest implements ManifestParser {
 
 	private getSegmentsFromRepresentation(representation: RawRepresentation): Array<Segment> {
 		if (representation.segmentTemplate || representation.adaptationSet.segmentTemplate) {
-			return this.getSegmentsFromSegmentTemplate(representation.segmentTemplate, representation);
+			const mergedTemplate = deepmergeCustom({ mergeArrays: false })(
+				representation.adaptationSet.segmentTemplate ?? {},
+				representation.segmentTemplate,
+			) as SegmentTemplate;
+			return this.getSegmentsFromSegmentTemplate(representation, mergedTemplate);
 		}
 		this.logger.warn(`No segment template for representation ${representation.id}`);
 		return [];
