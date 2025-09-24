@@ -4,6 +4,7 @@ import {
 	type Manifest,
 	type ManifestParser,
 	MediaType,
+	type Period as ParsedPeriod,
 	type Representation,
 	type Segment,
 	UniqueRepresentationMap,
@@ -34,6 +35,7 @@ export class DashManifest implements ManifestParser {
 			video: new UniqueRepresentationMap(),
 			audio: new UniqueRepresentationMap(),
 			images: new UniqueRepresentationMap(),
+			periods: [],
 			captionStreamToLanguage: {},
 		};
 	}
@@ -319,5 +321,12 @@ export class DashManifest implements ManifestParser {
 		for (const adaptationSet of period.adaptationSet ?? []) {
 			this.processAdaptationSet(adaptationSet);
 		}
+
+		const p = <ParsedPeriod>{};
+		p.id = period.id;
+		p.start = period.start;
+		p.baseUrl = period.baseUrl?.map((u) => u.url) ?? [];
+		p.startString = period.startString;
+		this.manifest.periods.push(p);
 	}
 }

@@ -1,12 +1,5 @@
 import fs from "node:fs/promises";
-import {
-	type Cue,
-	type Manifest,
-	type Report as RawReport,
-	type Representation,
-	type Segment,
-	UniqueRepresentationMap,
-} from "cmdt-shared";
+import type { Cue, Manifest, Report as RawReport, Representation, Segment } from "cmdt-shared";
 import type IEmsg from "./utils/mp4/interfaces/IEmsg.js";
 
 export class Report {

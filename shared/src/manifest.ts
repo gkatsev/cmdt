@@ -29,11 +29,11 @@ export type Segment = {
 };
 
 export type Period = {
-	id: string;
-	start: number;
+	id?: string;
+	start?: number;
 	absoluteStartMs?: number;
-	baseUrl?: string;
-	startString: string;
+	baseUrl?: Array<string>;
+	startString?: string;
 	segmentsAvailable: number;
 	duration: number;
 	end: number;

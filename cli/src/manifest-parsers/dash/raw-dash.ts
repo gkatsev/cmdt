@@ -161,6 +161,7 @@ export type AdaptationSet = {
 export type Period = {
 	id?: string;
 	start?: Seconds;
+	startString?: string;
 	bitstreamSwitching?: boolean;
 	baseUrl?: BaseUrl[];
 	segmentBase?: SegmentBase;
@@ -470,6 +471,7 @@ export function parsePeriods(periodRoot: XmlNode, mpd: MPD): Period[] {
 		const period: Period = {
 			id: e.$?.id,
 			start: optionalDurationToSeconds(e.$?.start),
+			startString: e.$?.start,
 			bitstreamSwitching: e.$?.bitstreamSwitching,
 			baseUrl: parseBaseUrls(e.BaseURL),
 			segmentBase: parseSegmentBase(e.SegmentBase?.[0]),
