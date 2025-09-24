@@ -30,7 +30,7 @@ export type Segment = {
 
 export type Period = {
 	id?: string;
-	start?: number;
+	start: number;
 	absoluteStartMs?: number;
 	baseUrl?: Array<string>;
 	startString?: string;
