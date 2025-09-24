@@ -6,6 +6,7 @@ import type { Segment } from "cmdt-shared";
 import { getOpts } from "../../cli-opts.js";
 import { getInstance as getLogger } from "../../logger.js";
 import { secondsToMilliseconds } from "../../utils/time-utils.js";
+import { wrapUrl } from "../../utils/url.js";
 import type { MediaPlaylist } from "./types.js";
 import { parseAttributes, parseBooleanAttribute } from "./utils.js";
 export abstract class HydratablePlaylist {
@@ -106,7 +107,7 @@ export abstract class HydratablePlaylist {
 		if (destination.startsWith("http")) {
 			return destination;
 		}
-		const url = new URL(destination, origin);
+		const url = wrapUrl(destination, origin);
 		return url.href;
 	}
 	private parseSegment(lines: Array<string>, lineValue: string, index: number) {

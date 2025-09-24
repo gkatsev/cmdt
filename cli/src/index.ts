@@ -15,6 +15,7 @@ import { HlsManifest } from "./manifest-parsers/hls.js";
 import { MediaStreamValidator } from "./media-stream-validator/media-stream-validator.js";
 import { Report } from "./report.js";
 import { ThumbnailExtractor } from "./thumbnail-extractor.js";
+import { wrapUrl } from "./utils/url.js";
 
 const options = getOpts();
 const logger = getLogger();
@@ -37,7 +38,7 @@ async function fetchAndWriteManifest(uri: string): Promise<string> {
 	logger.info(`Fetching manifest from ${uri}`);
 	try {
 		const response = await axios.get(uri);
-		const parsedUrl = new URL(uri);
+		const parsedUrl = wrapUrl(uri);
 		const existingExtension = parsedUrl.pathname.split(".").pop() ?? "mpd";
 		await fs.writeFile(path.resolve(options.output, `manifest.${existingExtension}`), response.data);
 		return response.data;
