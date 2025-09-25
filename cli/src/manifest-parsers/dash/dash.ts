@@ -4,6 +4,7 @@ import {
 	type Manifest,
 	type ManifestParser,
 	MediaType,
+	type Period as ParsedPeriod,
 	type Representation,
 	type Segment,
 	UniqueRepresentationMap,
@@ -34,6 +35,7 @@ export class DashManifest implements ManifestParser {
 			video: new UniqueRepresentationMap(),
 			audio: new UniqueRepresentationMap(),
 			images: new UniqueRepresentationMap(),
+			periods: [],
 			captionStreamToLanguage: {},
 		};
 	}
@@ -316,8 +318,30 @@ export class DashManifest implements ManifestParser {
 	}
 
 	private processPeriod(period: Period): void {
+		// store index of current segments so we can only use the newly added segments
+		const i = this.manifest.video.entries().next().value?.[1].segments.length ?? 0;
+
 		for (const adaptationSet of period.adaptationSet ?? []) {
 			this.processAdaptationSet(adaptationSet);
 		}
+
+		const segments = this.manifest.video.entries().next().value?.[1].segments ?? [];
+
+		const p = <ParsedPeriod>{};
+		p.id = period.id;
+		p.start = period.start ?? 0;
+		p.baseUrl = period.baseUrl?.map((u) => u.url) ?? [];
+		p.startString = period.startString;
+		p.segmentsAvailable = segments.length;
+		p.duration = segments.slice(i).reduce((sum, seg) => sum + seg.duration, 0) / 1000;
+		p.end = p.start + p.duration;
+		if (this.manifest.periods.length > 0) {
+			const previousPeriod = this.manifest.periods[this.manifest.periods.length - 1];
+			if (previousPeriod) {
+				p.startPrevEnd = p.start - previousPeriod.end < 0.1;
+			}
+		}
+
+		this.manifest.periods.push(p);
 	}
 }

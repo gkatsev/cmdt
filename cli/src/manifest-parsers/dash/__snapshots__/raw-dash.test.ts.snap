@@ -1049,6 +1049,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 0,
+      "startString": "PT0S",
     },
     {
       "adaptationSet": [
@@ -2670,6 +2671,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 30.03,
+      "startString": "PT30.03S",
     },
     {
       "adaptationSet": [
@@ -3835,6 +3837,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 117.7,
+      "startString": "PT1M57.700916666S",
     },
     {
       "adaptationSet": [
@@ -5444,6 +5447,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 177.76,
+      "startString": "PT2M57.760916666S",
     },
     {
       "adaptationSet": [
@@ -6459,6 +6463,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 555.179,
+      "startString": "PT9M15.179625S",
     },
     {
       "adaptationSet": [
@@ -7486,6 +7491,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 570.194,
+      "startString": "PT9M30.194625S",
     },
     {
       "adaptationSet": [
@@ -8513,6 +8519,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 600.224,
+      "startString": "PT10M0.224625S",
     },
     {
       "adaptationSet": [
@@ -10086,6 +10093,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 630.254,
+      "startString": "PT10M30.254625S",
     },
     {
       "adaptationSet": [
@@ -11119,6 +11127,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 957.039,
+      "startString": "PT15M57.039416666S",
     },
     {
       "adaptationSet": [
@@ -12134,6 +12143,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 987.069,
+      "startString": "PT16M27.069416666S",
     },
     {
       "adaptationSet": [
@@ -13791,6 +13801,7 @@ exports[`RawDashManifest > should parse a DASH manifest 1`] = `
       "segmentList": undefined,
       "segmentTemplate": undefined,
       "start": 1002.117,
+      "startString": "PT16M42.117783332S",
     },
   ],
   "profiles": "urn:mpeg:dash:profile:isoff-live:2011",

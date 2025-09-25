@@ -9,7 +9,8 @@ const program = new Command()
 	)
 	.option("--dash-conformance", "Run DASH-IF conformance tool (DASH only)")
 	.option("-t, --thumbnails", "Validate thumbnails (check for duplicates)")
-	.option("--media-stream-validator", "Run apple's media stream validator (HLS only)");
+	.option("--media-stream-validator", "Run apple's media stream validator (HLS only)")
+	.option("-p, --log-periods", "Print a table of periods in DASH manifests");
 
 type CliOpts = ReturnType<typeof program.opts>;
 

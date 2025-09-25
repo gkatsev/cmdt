@@ -1,4 +1,4 @@
-import type { ImageRepresentation, Report as ReportData } from "cmdt-shared";
+import type { ImageRepresentation, Period, Report as ReportData } from "cmdt-shared";
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import Captions from "./components/manifest/captions";
 import DashIfConformance from "./components/manifest/dash-if-conformance";
 import ImageRepresentations from "./components/manifest/image-representations";
 import MissingCaptions from "./components/manifest/missing-captions";
+import Periods from "./components/manifest/periods";
 import VideoRepresentations from "./components/manifest/video-representations";
 
 export default function Report(props: { rawReport: ReportData }) {
@@ -38,6 +39,12 @@ export default function Report(props: { rawReport: ReportData }) {
 							<AccordionTrigger>Image Representations</AccordionTrigger>
 							<AccordionContent>
 								<ImageRepresentations representations={rawReport.manifest.images as ImageRepresentation[]} />
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-4">
+							<AccordionTrigger>Periods</AccordionTrigger>
+							<AccordionContent>
+								<Periods periods={rawReport.manifest.periods as Period[]} />
 							</AccordionContent>
 						</AccordionItem>
 					</Accordion>

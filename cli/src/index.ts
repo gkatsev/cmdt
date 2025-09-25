@@ -104,6 +104,11 @@ async function processManifest(uri: string) {
 	report.ingestManifest(manifest);
 	await report.write(path.resolve(options.output, "report.cmdt"));
 
+	if (options.logPeriods) {
+		// biome-ignore lint/suspicious/noConsole: using console.table to print the data out
+		console.table(manifest.periods, ["id", "startString", "start", "duration", "end", "startPrevEnd"]);
+	}
+
 	logger.info("Done!");
 }
 
