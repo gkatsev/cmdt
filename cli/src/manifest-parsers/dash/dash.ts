@@ -39,7 +39,7 @@ export class DashManifest implements ManifestParser {
 	}
 	public async parse(manifest: string, manifestUrl: string): Promise<Manifest> {
 		const mpd = await getRawDashManifest(manifest);
-		this.manifest.url = new URL(manifestUrl);
+		this.manifest.url = wrapUrl(manifestUrl);
 		this.manifest = this.parseRawManifest(mpd);
 		return this.manifest;
 	}
@@ -141,12 +141,12 @@ export class DashManifest implements ManifestParser {
 			baseUrls = [this.manifest.url.href, ...baseUrls];
 		}
 
-		let absoluteBase = new URL(this.manifest.url.href);
+		let absoluteBase = wrapUrl(this.manifest.url.href);
 		for (const baseUrl of baseUrls) {
 			if (baseUrl.startsWith("http")) {
-				absoluteBase = new URL(baseUrl);
+				absoluteBase = wrapUrl(baseUrl);
 			} else {
-				absoluteBase = new URL(baseUrl, absoluteBase);
+				absoluteBase = wrapUrl(baseUrl, absoluteBase);
 			}
 		}
 		return absoluteBase.href;
