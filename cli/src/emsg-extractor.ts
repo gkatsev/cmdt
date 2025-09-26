@@ -7,8 +7,7 @@ import { getOpts } from "./cli-opts.js";
 import type { DownloadEntry } from "./downloader.js";
 import { getInstance as getLogger } from "./logger.js";
 import type { Report } from "./report.js";
-import type IEmsg from "./utils/mp4/interfaces/IEmsg.js";
-import type IParsedBox from "./utils/mp4/interfaces/IParsedBox.js";
+import type { Emsg, ParsedBox } from "./utils/mp4/types.js";
 import Mp4Parser from "./utils/mp4/parser.js";
 
 export class EmsgExtractor {
@@ -44,8 +43,8 @@ export class EmsgExtractor {
 			const segment = await fs.readFile(segmentPath);
 
 			mp4Parser
-				.fullBox("emsg", (box: IParsedBox) => {
-					const parsedEmsgBox: IEmsg = Mp4Parser.parseEmsg(box);
+				.fullBox("emsg", (box: ParsedBox) => {
+					const parsedEmsgBox: Emsg = Mp4Parser.parseEmsg(box);
 					try {
 						const strData = new TextDecoder("utf-8").decode(parsedEmsgBox.messageData as Uint8Array);
 						parsedEmsgBox.messageData = strData;
@@ -54,7 +53,7 @@ export class EmsgExtractor {
 					}
 					report.addEsmg(download.representation, segmentMetadata, parsedEmsgBox);
 				})
-				.box("moov", (box: IParsedBox) => {
+				.box("moov", (box: ParsedBox) => {
 					Mp4Parser.children(box);
 				})
 				.parse(new Uint8Array(segment).buffer);

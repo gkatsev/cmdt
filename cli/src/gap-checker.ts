@@ -5,11 +5,7 @@ import type winston from "winston";
 import { getOpts } from "./cli-opts.js";
 import { getInstance as getLogger } from "./logger.js";
 import type { Report } from "./report.js";
-import type IMdhd from "./utils/mp4/interfaces/IMdhd.js";
-import type IParsedBox from "./utils/mp4/interfaces/IParsedBox.js";
-import type ITfdt from "./utils/mp4/interfaces/ITfdt.js";
-import type ITfhd from "./utils/mp4/interfaces/ITfhd.js";
-import type ITkhd from "./utils/mp4/interfaces/ITkhd.js";
+import type { Mdhd, ParsedBox, Tfdt, Tfhd, Tkhd } from "./utils/mp4/types.js";
 import Mp4Parser from "./utils/mp4/parser.js";
 import { secondsToMilliseconds } from "./utils/time-utils.js";
 
@@ -33,13 +29,13 @@ export class GapChecker {
 			.box("moov", Mp4Parser.children)
 			.box("mvex", Mp4Parser.children)
 			.box("trak", Mp4Parser.children)
-			.fullBox("tkhd", (box: IParsedBox) => {
-				const parsedTkhdBox: ITkhd = Mp4Parser.parseTkhd(box);
+			.fullBox("tkhd", (box: ParsedBox) => {
+				const parsedTkhdBox: Tkhd = Mp4Parser.parseTkhd(box);
 				trackIds.push(parsedTkhdBox.trackId);
 			})
 			.box("mdia", Mp4Parser.children)
-			.fullBox("mdhd", (box: IParsedBox) => {
-				const parsedMdhdBox: IMdhd = Mp4Parser.parseMdhd(box);
+			.fullBox("mdhd", (box: ParsedBox) => {
+				const parsedMdhdBox: Mdhd = Mp4Parser.parseMdhd(box);
 				timescales.push(parsedMdhdBox.timescale);
 			})
 			.box("minf", Mp4Parser.children)
@@ -85,22 +81,22 @@ export class GapChecker {
 		new Mp4Parser()
 			.box("moof", Mp4Parser.children)
 			.box("traf", Mp4Parser.children)
-			.fullBox("tfhd", (box: IParsedBox) => {
-				const parsedTfhdBox: ITfhd = Mp4Parser.parseTfhd(box);
+			.fullBox("tfhd", (box: ParsedBox) => {
+				const parsedTfhdBox: Tfhd = Mp4Parser.parseTfhd(box);
 				const trackTimescale: number | undefined = timescalesPerTrack.get(parsedTfhdBox.trackId);
 				if (trackTimescale !== undefined) {
 					timescale = trackTimescale;
 				}
 			})
-			.fullBox("trun", (box: IParsedBox) => {
+			.fullBox("trun", (box: ParsedBox) => {
 				const parsedTrunBox = Mp4Parser.parseTrun(box);
 				duration = parsedTrunBox.sampleData.reduce((acc: number, sample) => {
 					acc += sample.sampleDuration ?? 0;
 					return acc;
 				}, 0);
 			})
-			.fullBox("tfdt", (box: IParsedBox) => {
-				const parsedTfdtBox: ITfdt = Mp4Parser.parseTfdt(box);
+			.fullBox("tfdt", (box: ParsedBox) => {
+				const parsedTfdtBox: Tfdt = Mp4Parser.parseTfdt(box);
 				baseMediaDecodeTime = parsedTfdtBox.baseMediaDecodeTime;
 			})
 			.parse(new Uint8Array(segmentData).buffer);

@@ -3,14 +3,7 @@ import type winston from "winston";
 import { getInstance as getLogger } from "../../logger.js";
 import type ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
 import type IDataSegment from "../../utils/manifest/interfaces/IDataSegment.js";
-import type IFrma from "../../utils/mp4/interfaces/IFrma.js";
-import type IMdhd from "../../utils/mp4/interfaces/IMdhd.js";
-import type IParsedBox from "../../utils/mp4/interfaces/IParsedBox.js";
-import type ITfdt from "../../utils/mp4/interfaces/ITfdt.js";
-import type ITfhd from "../../utils/mp4/interfaces/ITfhd.js";
-import type ITkhd from "../../utils/mp4/interfaces/ITkhd.js";
-import type ITrex from "../../utils/mp4/interfaces/ITrex.js";
-import type ITrun from "../../utils/mp4/interfaces/ITrun.js";
+import type { Frma, Mdhd, ParsedBox, Tfdt, Tfhd, Tkhd, Trex, Trun } from "../../utils/mp4/types.js";
 import Mp4Parser from "../../utils/mp4/parser.js";
 import EBitstreamFormat from "../enum/EBitstreamFormat.js";
 import CeaDecoder from "./ceaDecoder.js";
@@ -53,13 +46,13 @@ class CeaParser {
 		const trackIds: Array<number> = [];
 		const timescales: Array<number> = [];
 
-		const skipToEnd = (box: IParsedBox): void => {
+		const skipToEnd = (box: ParsedBox): void => {
 			const { reader } = box;
 			const end: number = box.start + box.size - reader.getPosition();
 			reader.skip(end);
 		};
 
-		const codecBoxParser = (box: IParsedBox): void => {
+		const codecBoxParser = (box: ParsedBox): void => {
 			this.setBitstreamFormat(box.name);
 			skipToEnd(box);
 		};
@@ -67,19 +60,19 @@ class CeaParser {
 		new Mp4Parser()
 			.box("moov", Mp4Parser.children)
 			.box("mvex", Mp4Parser.children)
-			.fullBox("trex", (box: IParsedBox) => {
-				const parsedTrexBox: ITrex = Mp4Parser.parseTrex(box);
+			.fullBox("trex", (box: ParsedBox) => {
+				const parsedTrexBox: Trex = Mp4Parser.parseTrex(box);
 				this._defaultSampleDuration = parsedTrexBox.defaultSampleDuration;
 				this._defaultSampleSize = parsedTrexBox.defaultSampleSize;
 			})
 			.box("trak", Mp4Parser.children)
-			.fullBox("tkhd", (box: IParsedBox) => {
-				const parsedTkhdBox: ITkhd = Mp4Parser.parseTkhd(box);
+			.fullBox("tkhd", (box: ParsedBox) => {
+				const parsedTkhdBox: Tkhd = Mp4Parser.parseTkhd(box);
 				trackIds.push(parsedTkhdBox.trackId);
 			})
 			.box("mdia", Mp4Parser.children)
-			.fullBox("mdhd", (box: IParsedBox) => {
-				const parsedMdhdBox: IMdhd = Mp4Parser.parseMdhd(box);
+			.fullBox("mdhd", (box: ParsedBox) => {
+				const parsedMdhdBox: Mdhd = Mp4Parser.parseMdhd(box);
 				timescales.push(parsedMdhdBox.timescale);
 			})
 			.box("minf", Mp4Parser.children)
@@ -100,8 +93,8 @@ class CeaParser {
 			// the codec used.
 			.box("encv", Mp4Parser.visualSampleEntry)
 			.box("sinf", Mp4Parser.children)
-			.box("frma", (box: IParsedBox) => {
-				const parsedFrmaBox: IFrma = Mp4Parser.parseFrma(box);
+			.box("frma", (box: ParsedBox) => {
+				const parsedFrmaBox: Frma = Mp4Parser.parseFrma(box);
 				this.setBitstreamFormat(parsedFrmaBox.codec);
 			})
 			.parse(data);
@@ -228,24 +221,24 @@ class CeaParser {
 		let defaultSampleDuration: number = this._defaultSampleDuration;
 		let defaultSampleSize: number = this._defaultSampleSize;
 		let moofOffset = 0;
-		const parsedTRUNs: Array<ITrun> = [];
+		const parsedTRUNs: Array<Trun> = [];
 		let baseMediaDecodeTime = 0;
 		let timescale: number = this._DEFAULT_TIMESCALE;
 
 		new Mp4Parser()
-			.box("moof", (box: IParsedBox) => {
+			.box("moof", (box: ParsedBox) => {
 				moofOffset = box.start;
 				// trun box parsing is reset on each moof.
 				parsedTRUNs.length = 0;
 				Mp4Parser.children(box);
 			})
 			.box("traf", Mp4Parser.children)
-			.fullBox("trun", (box: IParsedBox) => {
-				const parsedTrunBox: ITrun = Mp4Parser.parseTrun(box);
+			.fullBox("trun", (box: ParsedBox) => {
+				const parsedTrunBox: Trun = Mp4Parser.parseTrun(box);
 				parsedTRUNs.push(parsedTrunBox);
 			})
-			.fullBox("tfhd", (box: IParsedBox) => {
-				const parsedTfhdBox: ITfhd = Mp4Parser.parseTfhd(box);
+			.fullBox("tfhd", (box: ParsedBox) => {
+				const parsedTfhdBox: Tfhd = Mp4Parser.parseTfhd(box);
 				defaultSampleDuration = parsedTfhdBox.defaultSampleDuration || this._defaultSampleDuration;
 				defaultSampleSize = parsedTfhdBox.defaultSampleSize || this._defaultSampleSize;
 				const trackTimescale: number | undefined = this._trackIdToTimescale.get(parsedTfhdBox.trackId);
@@ -253,11 +246,11 @@ class CeaParser {
 					timescale = trackTimescale;
 				}
 			})
-			.fullBox("tfdt", (box: IParsedBox) => {
-				const parsedTfdtBox: ITfdt = Mp4Parser.parseTfdt(box);
+			.fullBox("tfdt", (box: ParsedBox) => {
+				const parsedTfdtBox: Tfdt = Mp4Parser.parseTfdt(box);
 				baseMediaDecodeTime = parsedTfdtBox.baseMediaDecodeTime;
 			})
-			.box("mdat", (box: IParsedBox) => {
+			.box("mdat", (box: ParsedBox) => {
 				const { reader } = box;
 
 				let sampleIndex = 0;
@@ -265,8 +258,8 @@ class CeaParser {
 
 				// Combine all sample data.  This assumes that the samples described across
 				// multiple trun boxes are still continuous in the mdat box.
-				const sampleData: ITrun["sampleData"] = [];
-				parsedTRUNs.forEach((t: ITrun) => {
+				const sampleData: Trun["sampleData"] = [];
+				parsedTRUNs.forEach((t: Trun) => {
 					sampleData.push(...t.sampleData);
 				});
 

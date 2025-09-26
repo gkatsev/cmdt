@@ -5,7 +5,7 @@ import { getBinaryTestFile, getTestFile } from "../test/utils.js";
 import { GapChecker } from "./gap-checker.js";
 import { DashManifest } from "./manifest-parsers/dash/dash.js";
 import { Report } from "./report.js";
-import type IParsedBox from "./utils/mp4/interfaces/IParsedBox.js";
+import type { ParsedBox } from "./utils/mp4/types.js";
 import Mp4Parser from "./utils/mp4/parser.js";
 
 const TEST_SEGMENT_TIMESCALE = 24000;
@@ -15,7 +15,7 @@ function updateDecodeTime(data: Buffer, newTimeMs: number): Buffer {
 	new Mp4Parser()
 		.box("moof", Mp4Parser.children)
 		.box("traf", Mp4Parser.children)
-		.fullBox("tfdt", (box: IParsedBox) => {
+		.fullBox("tfdt", (box: ParsedBox) => {
 			if (box.version === 1) {
 				box.reader.setUint64(box.reader.getPosition(), (newTimeMs / 1000) * TEST_SEGMENT_TIMESCALE);
 			} else {
@@ -30,7 +30,7 @@ function updateDuration(data: Buffer, newDuration: number): Buffer {
 	new Mp4Parser()
 		.box("moof", Mp4Parser.children)
 		.box("traf", Mp4Parser.children)
-		.fullBox("trun", (box: IParsedBox) => {
+		.fullBox("trun", (box: ParsedBox) => {
 			const initialPosition = box.reader.getPosition();
 			const trunBox = Mp4Parser.parseTrun(box);
 			const entrySizeBytes = 12;

@@ -7,35 +7,37 @@ import DataViewReader from "./dataViewReader.js";
 import EBoxFormat from "./enum/EBoxFormat.js";
 import EEndian from "./enum/EEndian.js";
 import ESize from "./enum/ESize.js";
-import type IElst from "./interfaces/IElst.js";
-import type IEmsg from "./interfaces/IEmsg.js";
-import type IFrma from "./interfaces/IFrma.js";
-import type IIden from "./interfaces/IIden.js";
-import type IMdat from "./interfaces/IMdat.js";
-import type IMdhd from "./interfaces/IMdhd.js";
-import type IMedh from "./interfaces/IMedh.js";
-import type IMvhd from "./interfaces/IMvhd.js";
-import type IParsedBox from "./interfaces/IParsedBox.js";
-import type IPayl from "./interfaces/IPayl.js";
-import type IPrft from "./interfaces/IPrft.js";
-import type ISidx from "./interfaces/ISidx.js";
-import type ISidxReference from "./interfaces/ISidxReference.js";
-import type ISttg from "./interfaces/ISttg.js";
-import type ITenc from "./interfaces/ITenc.js";
-import type ITfdt from "./interfaces/ITfdt.js";
-import type ITfhd from "./interfaces/ITfhd.js";
-import type ITkhd from "./interfaces/ITkhd.js";
-import type ITrex from "./interfaces/ITrex.js";
-import type ITrun from "./interfaces/ITrun.js";
+import type {
+	Elst,
+	Emsg,
+	Frma,
+	Iden,
+	Mdat,
+	Mdhd,
+	Medh,
+	Mvhd,
+	ParsedBox,
+	Payl,
+	Prft,
+	Sidx,
+	SidxReference,
+	Sttg,
+	Tenc,
+	Tfdt,
+	Tfhd,
+	Tkhd,
+	Trex,
+	Trun,
+} from "./types.js";
 
-type CallbackType = (box: IParsedBox) => void;
+type CallbackType = (box: ParsedBox) => void;
 
 // TODO: spike codem-isoboxer pkg
 class Mp4Parser {
 	private headers = new Map<string, EBoxFormat>();
 	private boxDefinitions = new Map<string, CallbackType>();
 
-	private static parseData(box: IParsedBox): Uint8Array {
+	private static parseData(box: ParsedBox): Uint8Array {
 		const { reader } = box;
 		const all: number = reader.getLength() - reader.getPosition();
 		const data: Uint8Array = reader.readBytes(all);
@@ -49,7 +51,7 @@ class Mp4Parser {
 	 * describing the video codec parameters, followed by an arbitrary number of
 	 * appended children.  Each child is a box.
 	 */
-	public static visualSampleEntry(box: IParsedBox): void {
+	public static visualSampleEntry(box: ParsedBox): void {
 		// Skip 6 reserved bytes.
 		// Skip 2-byte data reference index.
 		// Skip 16 more reserved bytes.
@@ -68,20 +70,20 @@ class Mp4Parser {
 		}
 	}
 
-	public static children(box: IParsedBox): void {
+	public static children(box: ParsedBox): void {
 		while (box.reader.hasMoreData()) {
 			box.parser.parseNext(box.reader);
 		}
 	}
 
-	public static sampleDescription(box: IParsedBox): void {
+	public static sampleDescription(box: ParsedBox): void {
 		const count: number = box.reader.readUint32();
 		for (let i = 0; i < count; i++) {
 			box.parser.parseNext(box.reader);
 		}
 	}
 
-	public static parseElst(box: IParsedBox): IElst {
+	public static parseElst(box: ParsedBox): Elst {
 		const { reader, version } = box;
 		const entryCount: number = reader.readUint32();
 		let segmentDuration = 0;
@@ -110,7 +112,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseEmsg(box: IParsedBox): IEmsg {
+	public static parseEmsg(box: ParsedBox): Emsg {
 		const { reader, version, size, start } = box;
 		let id: number;
 		let eventDuration: number;
@@ -149,7 +151,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseFrma(box: IParsedBox): IFrma {
+	public static parseFrma(box: ParsedBox): Frma {
 		const { reader } = box;
 		const fourcc: number = reader.readUint32();
 		const codec: string = reader.typeToString(fourcc);
@@ -157,7 +159,7 @@ class Mp4Parser {
 		return { codec };
 	}
 
-	public static parseIden(box: IParsedBox): IIden {
+	public static parseIden(box: ParsedBox): Iden {
 		const { reader, start, size } = box;
 		const all: number = size - reader.getPosition();
 		const data: Uint8Array = reader.readBytes(all);
@@ -171,13 +173,13 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseMdat(box: IParsedBox): IMdat {
+	public static parseMdat(box: ParsedBox): Mdat {
 		return {
 			data: Mp4Parser.parseData(box),
 		};
 	}
 
-	public static parseMdhd(box: IParsedBox): IMdhd {
+	public static parseMdhd(box: ParsedBox): Mdhd {
 		const { reader, version, start, size } = box;
 		if (version === 1) {
 			reader.skip(ESize.UINT64); // Skip "creation_time"
@@ -197,7 +199,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseMehd(box: IParsedBox): IMedh {
+	public static parseMehd(box: ParsedBox): Medh {
 		const { reader, version } = box;
 		let fragmentDuration: number;
 		if (version === 1) {
@@ -211,7 +213,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseMvhd(box: IParsedBox): IMvhd {
+	public static parseMvhd(box: ParsedBox): Mvhd {
 		const { reader, version } = box;
 		if (version === 1) {
 			reader.skip(ESize.UINT64); // Skip "creation_time"
@@ -228,13 +230,13 @@ class Mp4Parser {
 		};
 	}
 
-	public static parsePayl(box: IParsedBox): IPayl {
+	public static parsePayl(box: ParsedBox): Payl {
 		return {
 			text: box.reader.readTerminatedString(),
 		};
 	}
 
-	public static parsePrft(box: IParsedBox): IPrft {
+	public static parsePrft(box: ParsedBox): Prft {
 		box.reader.readUint32(); // Ignore referenceTrackId
 
 		const ntpTimestampSec: number = box.reader.readUint32();
@@ -257,7 +259,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseSidx(box: IParsedBox): ISidx {
+	public static parseSidx(box: ParsedBox): Sidx {
 		const { reader, version } = box;
 		const referenceId: number = reader.readUint32();
 		const timescale: number = reader.readUint32();
@@ -278,7 +280,7 @@ class Mp4Parser {
 		// Add references
 		const referenceCount: number = reader.readUint16();
 
-		const references: Array<ISidxReference> = [];
+		const references: Array<SidxReference> = [];
 		for (let i = 0; i < referenceCount; i++) {
 			// |chunk| is 1 bit for |referenceType|, and 31 bits for |referenceSize|
 			const chunk: number = reader.readUint32();
@@ -302,7 +304,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseSttg(reader: DataViewReader, size: number): ISttg {
+	public static parseSttg(reader: DataViewReader, size: number): Sttg {
 		const all: number = size - reader.getPosition();
 		const data: Uint8Array = reader.readBytes(all);
 		const settings: string = uint8ToString(data);
@@ -312,7 +314,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTenc(box: IParsedBox): ITenc {
+	public static parseTenc(box: ParsedBox): Tenc {
 		const { reader, version } = box;
 		// Read reserved field
 		reader.readUint8();
@@ -356,7 +358,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTfdt(box: IParsedBox): ITfdt {
+	public static parseTfdt(box: ParsedBox): Tfdt {
 		const { reader, version } = box;
 		const baseMediaDecodeTime: number = version === 1 ? reader.readUint64() : reader.readUint32();
 
@@ -365,7 +367,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTfhd(box: IParsedBox): ITfhd {
+	public static parseTfhd(box: ParsedBox): Tfhd {
 		const { reader, flags } = box;
 		let defaultSampleDuration: number | null = null;
 		let defaultSampleSize: number | null = null;
@@ -406,7 +408,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTkhd(box: IParsedBox): ITkhd {
+	public static parseTkhd(box: ParsedBox): Tkhd {
 		const { reader, version, start, size } = box;
 		let trackId = 0;
 		if (version === 1) {
@@ -427,7 +429,7 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTrex(box: IParsedBox): ITrex {
+	public static parseTrex(box: ParsedBox): Trex {
 		const { reader, start, size } = box;
 		reader.skip(4); // Skip "track_ID"
 		reader.skip(4); // Skip "default_sample_description_index"
@@ -443,10 +445,10 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseTrun(box: IParsedBox): ITrun {
+	public static parseTrun(box: ParsedBox): Trun {
 		const { reader, flags, version } = box;
 		const sampleCount: number = reader.readUint32();
-		const sampleData: ITrun["sampleData"] = [];
+		const sampleData: Trun["sampleData"] = [];
 		let dataOffset: number | null = null;
 
 		// Read "data_offset" if present
@@ -460,7 +462,7 @@ class Mp4Parser {
 		}
 
 		for (let i = 0; i < sampleCount; i++) {
-			const sample: ITrun["sampleData"][0] = {
+			const sample: Trun["sampleData"][0] = {
 				sampleDuration: null,
 				sampleSize: null,
 				sampleCompositionTimeOffset: null,
@@ -922,7 +924,7 @@ class Mp4Parser {
 				flags = versionAndFlags & 0xffffff;
 			}
 
-			const box: IParsedBox = {
+			const box: ParsedBox = {
 				parser: this,
 				version,
 				flags,

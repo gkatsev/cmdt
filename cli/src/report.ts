@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import type { Cue, Manifest, Report as RawReport, Representation, Segment } from "cmdt-shared";
-import type IEmsg from "./utils/mp4/interfaces/IEmsg.js";
+import type { Emsg } from "./utils/mp4/types.js";
 
 export class Report {
 	private raw: RawReport;
@@ -77,7 +77,7 @@ export class Report {
 		}
 		this.raw.duplicateThumbnails[targetRepresentation][thumbnailId].add(candidateThumbnailId);
 	}
-	public addEsmg(representation: Representation, segment: Segment, emsg: IEmsg) {
+	public addEsmg(representation: Representation, segment: Segment, emsg: Emsg) {
 		let emsgsForRepresentation = this.raw.emsgs[representation.id];
 		if (!emsgsForRepresentation) {
 			emsgsForRepresentation = {
