@@ -1,12 +1,12 @@
 import type winston from "winston";
 import { getInstance as getLogger } from "../../../logger.js";
-import type ICea708ClosedCaptionByte from "./interfaces/ICea708ClosedCaptionByte.js";
+import type { Cea708ClosedCaptionByte } from "../../types.js";
 
 class DtvccPacket {
 	private _pos = 0;
 	private logger: winston.Logger;
 
-	constructor(private _packetData: Array<ICea708ClosedCaptionByte>) {
+	constructor(private _packetData: Array<Cea708ClosedCaptionByte>) {
 		this.logger = getLogger();
 	}
 
@@ -19,7 +19,7 @@ class DtvccPacket {
 	}
 
 	// Reads a byte from the packet
-	public readByte(): ICea708ClosedCaptionByte {
+	public readByte(): Cea708ClosedCaptionByte {
 		const byte = this._packetData[this._pos];
 		if (!byte) {
 			throw new Error("No byte to read");

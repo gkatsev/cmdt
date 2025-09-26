@@ -3,14 +3,11 @@ import type winston from "winston";
 import { getInstance as getLogger } from "../../../logger.js";
 import { CC_ROWS, DEFAULT_BG_COLOR, DEFAULT_TXT_COLOR } from "../../../utils/textConstants.js";
 import Cea608Memory from "./cea608Memory.js";
-import ECaptionType from "./enum/ECaptionType.js";
-import ECharSet from "./enum/ECharSet.js";
-import ECommandCode from "./enum/ECommandCode.js";
-import type ICea608ClosedCaptionPacket from "./interfaces/ICea608ClosedCaptionPacket.js";
+import { CaptionType, CharSet, CommandCode, type Cea608ClosedCaptionPacket } from "../../types.js";
 
 class Cea608DataChannel {
 	// Current Caption Type
-	private _type: ECaptionType = ECaptionType.NONE;
+	private _type: CaptionType = CaptionType.NONE;
 	// Text buffer for CEA-608 "text mode". Although, we don't emit text mode.
 	// So, this buffer serves as a no-op placeholder, just in case we receive
 	// captions that toggle text mode
@@ -91,7 +88,7 @@ class Cea608DataChannel {
 		// PACs toggle underline on the last bit of b2
 		const underline: boolean = (b2 & 0x01) === 0x01;
 
-		if (this._type === ECaptionType.TEXT) {
+		if (this._type === CaptionType.TEXT) {
 			// Don't execute the PAC if in text mode
 			return;
 		}
@@ -100,7 +97,7 @@ class Cea608DataChannel {
 		const buf: Cea608Memory = this._curbuf;
 
 		// Move entire scroll window to a new base in rollup mode
-		if (this._type === ECaptionType.ROLLUP && row !== buf.row) {
+		if (this._type === CaptionType.ROLLUP && row !== buf.row) {
 			const oldTopRow: number = 1 + buf.row - buf.scrollSize;
 			const newTopRow: number = 1 + row - buf.scrollSize;
 
@@ -129,7 +126,7 @@ class Cea608DataChannel {
 		this._curbuf.setTextColor(DEFAULT_TXT_COLOR);
 
 		// Mid-row attrs use a space
-		this._curbuf.addChar(ECharSet.BASIC_NORTH_AMERICAN, " ".charCodeAt(0));
+		this._curbuf.addChar(CharSet.BASIC_NORTH_AMERICAN, " ".charCodeAt(0));
 
 		let textColor: string | undefined = DEFAULT_TXT_COLOR;
 		let italics = false;
@@ -163,56 +160,56 @@ class Cea608DataChannel {
 	}
 
 	// The Cea608DataChannel control methods implement all CC control operations
-	private controlMiscellaneous(ccPacket: ICea608ClosedCaptionPacket): Cue | null {
+	private controlMiscellaneous(ccPacket: Cea608ClosedCaptionPacket): Cue | null {
 		const b2: number = ccPacket.ccData2;
 		const pts: number = ccPacket.pts;
 		let parsedClosedCaption: Cue | null = null;
 
 		switch (b2) {
-			case ECommandCode.RCL:
+			case CommandCode.RCL:
 				this.controlRcl();
 				break;
-			case ECommandCode.BS:
+			case CommandCode.BS:
 				this.controlBs();
 				break;
 			// unused (alarm off and alarm on)
-			case ECommandCode.AOD:
-			case ECommandCode.AON:
+			case CommandCode.AOD:
+			case CommandCode.AON:
 				break;
-			case ECommandCode.DER:
+			case CommandCode.DER:
 				// Delete to End of Row. Not implemented since position not supported
 				break;
-			case ECommandCode.RU2:
+			case CommandCode.RU2:
 				parsedClosedCaption = this.controlRu(2, pts);
 				break;
-			case ECommandCode.RU3:
+			case CommandCode.RU3:
 				parsedClosedCaption = this.controlRu(3, pts);
 				break;
-			case ECommandCode.RU4:
+			case CommandCode.RU4:
 				parsedClosedCaption = this.controlRu(4, pts);
 				break;
-			case ECommandCode.FON:
+			case CommandCode.FON:
 				this.controlFon();
 				break;
-			case ECommandCode.RDC:
+			case CommandCode.RDC:
 				this.controlRdc(pts);
 				break;
-			case ECommandCode.TR:
+			case CommandCode.TR:
 				this.controlTr();
 				break;
-			case ECommandCode.RTD:
+			case CommandCode.RTD:
 				this.controlRtd();
 				break;
-			case ECommandCode.EDM:
+			case CommandCode.EDM:
 				parsedClosedCaption = this.controlEdm(pts);
 				break;
-			case ECommandCode.CR:
+			case CommandCode.CR:
 				parsedClosedCaption = this.controlCr(pts);
 				break;
-			case ECommandCode.ENM:
+			case CommandCode.ENM:
 				this.controlEnm();
 				break;
-			case ECommandCode.EOC:
+			case CommandCode.EOC:
 				parsedClosedCaption = this.controlEoc(pts);
 				break;
 		}
@@ -227,7 +224,7 @@ class Cea608DataChannel {
 	private controlCr(pts: number): Cue | null {
 		const buf: Cea608Memory = this._curbuf;
 		// Only rollup and text mode is affected, but we don't emit text mode
-		if (this._type !== ECaptionType.ROLLUP) {
+		if (this._type !== CaptionType.ROLLUP) {
 			return null;
 		}
 		// Force out the scroll window since the top row will cleared
@@ -258,7 +255,7 @@ class Cea608DataChannel {
 		let parsedClosedCaption: Cue | null = null;
 
 		// For any type except rollup and text mode, it should be emitted, and memories cleared.
-		if (this._type !== ECaptionType.ROLLUP && this._type !== ECaptionType.TEXT) {
+		if (this._type !== CaptionType.ROLLUP && this._type !== CaptionType.TEXT) {
 			parsedClosedCaption = buf.forceEmit(this._prevEndTime, pts);
 
 			// Clear both memories
@@ -268,7 +265,7 @@ class Cea608DataChannel {
 			// Rollup base row defaults to the last row (15)
 			buf.setRow(CC_ROWS);
 		}
-		this._type = ECaptionType.ROLLUP;
+		this._type = CaptionType.ROLLUP;
 
 		// Set the new rollup window size
 		buf.setScrollSize(scrollSize);
@@ -278,7 +275,7 @@ class Cea608DataChannel {
 
 	// Handles flash on
 	private controlFon(): void {
-		this._curbuf.addChar(ECharSet.BASIC_NORTH_AMERICAN, " ".charCodeAt(0));
+		this._curbuf.addChar(CharSet.BASIC_NORTH_AMERICAN, " ".charCodeAt(0));
 	}
 
 	// Handles EDM - Erase Displayed Mem
@@ -287,7 +284,7 @@ class Cea608DataChannel {
 	private controlEdm(pts: number): Cue | null {
 		const buf: Cea608Memory = this._displayedMemory;
 		let parsedClosedCaption: Cue | null = null;
-		if (this._type !== ECaptionType.TEXT) {
+		if (this._type !== CaptionType.TEXT) {
 			// Clearing displayed memory means we now know how long its contents were displayed, so force it out
 			parsedClosedCaption = buf.forceEmit(this._prevEndTime, pts);
 		}
@@ -299,7 +296,7 @@ class Cea608DataChannel {
 	// Handles RDC - Resume Direct Captions. Initiates Paint-On captioning mode.
 	// RDC does not affect current display, so nothing needs to be forced out yet
 	private controlRdc(pts: number): void {
-		this._type = ECaptionType.PAINTON;
+		this._type = CaptionType.PAINTON;
 		// Point to displayed memory
 		this._curbuf = this._displayedMemory;
 
@@ -319,7 +316,7 @@ class Cea608DataChannel {
 	// This forces Pop-On mode, and swaps the displayed and nondisplayed memories
 	private controlEoc(pts: number): Cue | null {
 		let parsedClosedCaption: Cue | null = null;
-		if (this._type !== ECaptionType.TEXT) {
+		if (this._type !== CaptionType.TEXT) {
 			parsedClosedCaption = this._displayedMemory.forceEmit(this._prevEndTime, pts);
 		}
 		// Swap memories
@@ -340,7 +337,7 @@ class Cea608DataChannel {
 	// Initiates Pop-On style captioning. No need to force anything out upon
 	// entering Pop-On mode because it does not affect the current display
 	private controlRcl(): void {
-		this._type = ECaptionType.POPON;
+		this._type = CaptionType.POPON;
 		this._curbuf = this._nonDisplayedMemory;
 		// No scroll window now
 		this._curbuf.setScrollSize(0);
@@ -364,13 +361,13 @@ class Cea608DataChannel {
 	private controlRtd(): void {
 		this.logger.warn("CEA-608 text mode entered, but is unsupported");
 		this._curbuf = this._text;
-		this._type = ECaptionType.TEXT;
+		this._type = CaptionType.TEXT;
 	}
 
 	// Handles an Extended Western European byte pair
 	private handleExtendedWesternEuropeanChar(b1: number, b2: number): void {
 		// Get the char set from the LSB, which is the char set toggle bit
-		const charSet: ECharSet = b1 & 0x01 ? ECharSet.PORTUGUESE_GERMAN : ECharSet.SPANISH_FRENCH;
+		const charSet: CharSet = b1 & 0x01 ? CharSet.PORTUGUESE_GERMAN : CharSet.SPANISH_FRENCH;
 
 		this._curbuf.addChar(charSet, b2);
 	}
@@ -431,14 +428,14 @@ class Cea608DataChannel {
 
 	// Handles a Basic North American byte pair
 	public handleBasicNorthAmericanChar(b1: number, b2: number): void {
-		this._curbuf.addChar(ECharSet.BASIC_NORTH_AMERICAN, b1);
-		this._curbuf.addChar(ECharSet.BASIC_NORTH_AMERICAN, b2);
+		this._curbuf.addChar(CharSet.BASIC_NORTH_AMERICAN, b1);
+		this._curbuf.addChar(CharSet.BASIC_NORTH_AMERICAN, b2);
 	}
 
 	// Decodes control code.
 	// Three types of control codes:
 	// Preamble Address Codes, Mid-Row Codes, and Miscellaneous Control Codes.
-	public handleControlCode(ccPacket: ICea608ClosedCaptionPacket): Cue | null {
+	public handleControlCode(ccPacket: Cea608ClosedCaptionPacket): Cue | null {
 		const b1: number = ccPacket.ccData1;
 		const b2: number = ccPacket.ccData2;
 
@@ -462,7 +459,7 @@ class Cea608DataChannel {
 		} else if (this.isBackgroundAttribute(b1, b2)) {
 			this.controlBackgroundAttribute(b1, b2);
 		} else if (this.isSpecialNorthAmericanChar(b1, b2)) {
-			this._curbuf.addChar(ECharSet.SPECIAL_NORTH_AMERICAN, b2);
+			this._curbuf.addChar(CharSet.SPECIAL_NORTH_AMERICAN, b2);
 		} else if (this.isExtendedWesternEuropeanChar(b1, b2)) {
 			this.handleExtendedWesternEuropeanChar(b1, b2);
 		} else if (this.isMiscellaneous(b1, b2)) {
@@ -476,7 +473,7 @@ class Cea608DataChannel {
 	 * Resets channel state
 	 */
 	public reset(): void {
-		this._type = ECaptionType.NONE;
+		this._type = CaptionType.NONE;
 		this._curbuf = this._nonDisplayedMemory;
 		this._lastCp = null;
 		this._displayedMemory.reset();

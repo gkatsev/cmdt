@@ -1,6 +1,5 @@
-import ECcType from "../enum/ECcType.js";
+import { CcType, type Cea708ClosedCaptionByte } from "../../types.js";
 import DtvccPacket from "./dtvccPacket.js";
-import type ICea708ClosedCaptionByte from "./interfaces/ICea708ClosedCaptionByte.js";
 
 /**
  * CEA-708 DTVCC Packet Builder.
@@ -14,7 +13,7 @@ class DtvccPacketBuilder {
 	// An array containing built DTVCC packets that are ready to be processed
 	private _builtPackets: Array<DtvccPacket> = [];
 	// Stores the packet data for the current packet being processed, if any
-	private _currentPacketBeingBuilt: Array<ICea708ClosedCaptionByte> | null = null;
+	private _currentPacketBeingBuilt: Array<Cea708ClosedCaptionByte> | null = null;
 	// Keeps track of the number of bytes left to add in the current packet
 	private _bytesLeftToAddInCurrentPacket = 0;
 
@@ -22,8 +21,8 @@ class DtvccPacketBuilder {
 		return this._builtPackets;
 	}
 
-	public addByte(cea708Byte: ICea708ClosedCaptionByte): void {
-		if (cea708Byte.type === ECcType.DTVCC_PACKET_START) {
+	public addByte(cea708Byte: Cea708ClosedCaptionByte): void {
+		if (cea708Byte.type === CcType.DTVCC_PACKET_START) {
 			// If there was a packet being built that finished, it would have
 			// already been added to the built packets when it finished. So if
 			// there's an open packet at this point, it must be unfinished. As

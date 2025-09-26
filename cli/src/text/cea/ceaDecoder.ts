@@ -1,24 +1,18 @@
 import type { Cue } from "cmdt-shared";
 import DataViewReader from "../../utils/mp4/dataViewReader.js";
-import EEndian from "../../utils/mp4/enum/EEndian.js";
+import { Endian } from "../../utils/mp4/types.js";
 import Cea608DataChannel from "./608/cea608DataChannel.js";
-import type ICea608ClosedCaptionPacket from "./608/interfaces/ICea608ClosedCaptionPacket.js";
+import { CcType, type Cea608ClosedCaptionPacket, type Cea708ClosedCaptionByte } from "../types.js";
+import { CeaSchemeUri } from "../../utils/manifest/types.js";
 import Cea708Service from "./708/cea708Service.js";
 import type DtvccPacket from "./708/dtvccPacket.js";
 import DtvccPacketBuilder from "./708/dtvccPacketBuilder.js";
-import type ICea708ClosedCaptionByte from "./708/interfaces/ICea708ClosedCaptionByte.js";
-import ECcType from "./enum/ECcType.js";
-
-enum ECeaSchemeUri {
-	CEA608 = "urn:scte:dash:cc:cea-608:2015",
-	CEA708 = "urn:scte:dash:cc:cea-708:2015",
-}
 
 class CeaDecoder {
 	// An array of CEA-608 closed caption data extracted for decoding
-	private _cea608DataArray: Array<ICea608ClosedCaptionPacket> = [];
+	private _cea608DataArray: Array<Cea608ClosedCaptionPacket> = [];
 	// An array of CEA-708 closed caption data extracted for decoding
-	private _cea708DataArray: Array<ICea708ClosedCaptionByte> = [];
+	private _cea708DataArray: Array<Cea708ClosedCaptionByte> = [];
 	// A DTVCC Packet builder for CEA-708 data
 	private _dtvccPacketBuilder: DtvccPacketBuilder;
 	// Number of consecutive bad frames decoded on CEA-608
@@ -69,7 +63,7 @@ class CeaDecoder {
 	}
 
 	// Decodes a CEA-608 closed caption packet based on ANSI/CEA-608
-	private decodeCea608(ccPacket: ICea608ClosedCaptionPacket): Cue | null {
+	private decodeCea608(ccPacket: Cea608ClosedCaptionPacket): Cue | null {
 		const fieldNum: number = ccPacket.type;
 
 		// If this packet is a control code, then it also sets the channel
@@ -202,7 +196,7 @@ class CeaDecoder {
 	}
 
 	// Extracts closed caption bytes from CEA-X08 packets from the stream based on ANSI/SCTE 128 and A/53, Part 4
-	public extract(userDataSeiMessage: Uint8Array, pts: number, ceaSchemeUri: ECeaSchemeUri): void {
+	public extract(userDataSeiMessage: Uint8Array, pts: number, ceaSchemeUri: CeaSchemeUri): void {
 		if (this._shouldSetFirstPts) {
 			this._cea608ModeToStream.forEach((stream: Cea608DataChannel) => {
 				stream.setFirstPts(pts);
@@ -210,7 +204,7 @@ class CeaDecoder {
 			this._shouldSetFirstPts = false;
 		}
 
-		const reader: DataViewReader = new DataViewReader(userDataSeiMessage, EEndian.BIG);
+		const reader: DataViewReader = new DataViewReader(userDataSeiMessage, Endian.BIG);
 
 		if (reader.getLength() < this._MIN_LENGTH) {
 			return;
@@ -255,7 +249,7 @@ class CeaDecoder {
 			if (ccValid) {
 				const ccType: number = cc & 0x03;
 				// Send the packet to the appropriate data array (CEA-608 or CEA-708)
-				if (ceaSchemeUri === ECeaSchemeUri.CEA608) {
+				if (ceaSchemeUri === CeaSchemeUri.CEA608) {
 					// CEA-608 NTSC (Line 21) Data
 					this._cea608DataArray.push({
 						pts,
@@ -264,7 +258,7 @@ class CeaDecoder {
 						ccData2,
 						order: this._cea608DataArray.length,
 					});
-				} else if (ceaSchemeUri === ECeaSchemeUri.CEA708) {
+				} else if (ceaSchemeUri === CeaSchemeUri.CEA708) {
 					// CEA-708 DTVCC Data
 					this._cea708DataArray.push({
 						pts,
@@ -278,7 +272,7 @@ class CeaDecoder {
 					// contains header info, and the second byte is just packet data.
 					this._cea708DataArray.push({
 						pts,
-						type: ECcType.DTVCC_PACKET_DATA,
+						type: CcType.DTVCC_PACKET_DATA,
 						value: ccData2,
 						order: this._cea708DataArray.length,
 					});
@@ -295,8 +289,8 @@ class CeaDecoder {
 		// algorithm isn't stable. This comparator sorts on presentation
 		// timestamp, and breaks ties on receive order (position in array)
 		const stableComparator = (
-			p1: ICea608ClosedCaptionPacket | ICea708ClosedCaptionByte,
-			p2: ICea608ClosedCaptionPacket | ICea708ClosedCaptionByte,
+			p1: Cea608ClosedCaptionPacket | Cea708ClosedCaptionByte,
+			p2: Cea608ClosedCaptionPacket | Cea708ClosedCaptionByte,
 		): number => p1.pts - p2.pts || p1.order - p2.order;
 
 		this._cea608DataArray.sort(stableComparator);

@@ -1,5 +1,5 @@
 import type { Cue, Style, Text } from "cmdt-shared";
-import type IStyledChar from "../../text/cea/interfaces/IStyledChar.js";
+import type { StyledChar } from "../../text/types.js";
 import buildRawText from "../buildRawText.js";
 
 import { DEFAULT_BG_COLOR, DEFAULT_TXT_COLOR } from "../textConstants.js";
@@ -21,7 +21,7 @@ const createTextCue = (underline: boolean, italics: boolean, txtColor: string, b
 	};
 };
 
-const getParsedCaption = (cue: Cue, memory: Array<Array<IStyledChar | null>>): Cue | null => {
+const getParsedCaption = (cue: Cue, memory: Array<Array<StyledChar | null>>): Cue | null => {
 	if (cue.begin >= cue.end) {
 		return null;
 	}
@@ -31,14 +31,14 @@ const getParsedCaption = (cue: Cue, memory: Array<Array<IStyledChar | null>>): C
 	let lastNonEmptyRow = -1;
 
 	for (let i = 0; i < memory.length; i++) {
-		if (memory[i]?.some((e: IStyledChar | null) => e !== null && e.character.trim() !== "")) {
+		if (memory[i]?.some((e: StyledChar | null) => e !== null && e.character.trim() !== "")) {
 			firstNonEmptyRow = i;
 			break;
 		}
 	}
 
 	for (let i: number = memory.length - 1; i >= 0; i--) {
-		if (memory[i]?.some((e: IStyledChar | null) => e !== null && e.character.trim() !== "")) {
+		if (memory[i]?.some((e: StyledChar | null) => e !== null && e.character.trim() !== "")) {
 			lastNonEmptyRow = i;
 			break;
 		}
@@ -61,7 +61,7 @@ const getParsedCaption = (cue: Cue, memory: Array<Array<IStyledChar | null>>): C
 
 		// Find the first and last non-empty characters in this row. We do this so
 		// no styles creep in before/after the first and last non-empty chars
-		const row: Array<IStyledChar | null> = memory[i] ?? [];
+		const row: Array<StyledChar | null> = memory[i] ?? [];
 		let firstNonEmptyCol = -1;
 		let lastNonEmptyCol = -1;
 
@@ -85,7 +85,7 @@ const getParsedCaption = (cue: Cue, memory: Array<Array<IStyledChar | null>>): C
 		}
 
 		for (let j: number = firstNonEmptyCol; j <= lastNonEmptyCol; j++) {
-			const styledChar: IStyledChar | null = row[j] ?? null;
+			const styledChar: StyledChar | null = row[j] ?? null;
 
 			// A null between non-empty cells in a row is handled as a space
 			if (!styledChar) {

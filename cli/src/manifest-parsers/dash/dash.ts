@@ -13,7 +13,7 @@ import { deepmergeCustom } from "deepmerge-ts";
 import type winston from "winston";
 import { getInstance as getLogger } from "../../logger.js";
 import getStreamAndLanguages from "../../utils/cea/getStreamAndLanguages.js";
-import ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
+import { CeaSchemeUri } from "../../utils/manifest/types.js";
 import { secondsToMilliseconds } from "../../utils/time-utils.js";
 import { wrapUrl } from "../../utils/url.js";
 import {
@@ -204,8 +204,8 @@ export class DashManifest implements ManifestParser {
 	}
 
 	private parseVideoRepresentation(representation: RawRepresentation): void {
-		const hasCea608 = representation.adaptationSet.accessibility?.some((e) => e.schemeIdUri === ECeaSchemeUri.CEA608);
-		const hasCea708 = representation.adaptationSet.accessibility?.some((e) => e.schemeIdUri === ECeaSchemeUri.CEA708);
+		const hasCea608 = representation.adaptationSet.accessibility?.some((e) => e.schemeIdUri === CeaSchemeUri.CEA608);
+		const hasCea708 = representation.adaptationSet.accessibility?.some((e) => e.schemeIdUri === CeaSchemeUri.CEA708);
 		const videoRepresentation: Representation = {
 			id: representation.id,
 			width: representation.width ?? representation.adaptationSet.width,

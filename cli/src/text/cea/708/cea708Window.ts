@@ -7,9 +7,7 @@ import {
 	LINE_HEIGHT_MULTIPLIER,
 	LINE_WIDTH_MULTIPLIER_16_9,
 } from "../../../utils/textConstants.js";
-import type IStyledChar from "../interfaces/IStyledChar.js";
-import EAnchorId from "./enum/EAnchorId.js";
-import ETextJustification from "./enum/ETextJustification.js";
+import { AnchorId, TextJustification, type StyledChar } from "../../types.js";
 
 // CEA-708 Window. Each CEA-708 service owns 8 of these.
 class Cea708Window {
@@ -35,9 +33,9 @@ class Cea708Window {
 	// Indicates the number of columns in this window's buffer/memory
 	private _colCount = 0;
 	// Center by default
-	private _justification: ETextJustification = ETextJustification.CENTER;
+	private _justification: TextJustification = TextJustification.CENTER;
 	// An array of rows of styled characters, representing the current text and styling of text in this window
-	private _memory: Array<Array<IStyledChar | null>> = [];
+	private _memory: Array<Array<StyledChar | null>> = [];
 	private _startTime = 0;
 	// Row that the current pen is pointing at
 	private _row = 0;
@@ -84,39 +82,39 @@ class Cea708Window {
 		// values can be used be used as is or should be converted to percentages.
 
 		switch (this._anchorId) {
-			case EAnchorId.UPPER_LEFT:
+			case AnchorId.UPPER_LEFT:
 				region.regionAnchorX = 0;
 				region.regionAnchorY = 0;
 				break;
-			case EAnchorId.UPPER_CENTER:
+			case AnchorId.UPPER_CENTER:
 				region.regionAnchorX = 50;
 				region.regionAnchorY = 0;
 				break;
-			case EAnchorId.UPPER_RIGHT:
+			case AnchorId.UPPER_RIGHT:
 				region.regionAnchorX = 100;
 				region.regionAnchorY = 0;
 				break;
-			case EAnchorId.MIDDLE_LEFT:
+			case AnchorId.MIDDLE_LEFT:
 				region.regionAnchorX = 0;
 				region.regionAnchorY = 50;
 				break;
-			case EAnchorId.MIDDLE_CENTER:
+			case AnchorId.MIDDLE_CENTER:
 				region.regionAnchorX = 50;
 				region.regionAnchorY = 50;
 				break;
-			case EAnchorId.MIDDLE_RIGHT:
+			case AnchorId.MIDDLE_RIGHT:
 				region.regionAnchorX = 100;
 				region.regionAnchorY = 50;
 				break;
-			case EAnchorId.LOWER_LEFT:
+			case AnchorId.LOWER_LEFT:
 				region.regionAnchorX = 0;
 				region.regionAnchorY = 100;
 				break;
-			case EAnchorId.LOWER_CENTER:
+			case AnchorId.LOWER_CENTER:
 				region.regionAnchorX = 50;
 				region.regionAnchorY = 100;
 				break;
-			case EAnchorId.LOWER_RIGHT:
+			case AnchorId.LOWER_RIGHT:
 				region.regionAnchorX = 100;
 				region.regionAnchorY = 100;
 				break;
@@ -124,8 +122,8 @@ class Cea708Window {
 	}
 
 	// Allocates and returns a new row.
-	private createNewRow(): Array<IStyledChar | null> {
-		const row: Array<IStyledChar | null> = [];
+	private createNewRow(): Array<StyledChar | null> {
+		const row: Array<StyledChar | null> = [];
 		for (let j = 0; j < this._MAX_COLS; j++) {
 			row.push(null);
 		}
@@ -177,7 +175,7 @@ class Cea708Window {
 		this._italics = italics;
 	}
 
-	public setJustification(justification: ETextJustification): void {
+	public setJustification(justification: TextJustification): void {
 		this._justification = justification;
 	}
 
@@ -245,7 +243,7 @@ class Cea708Window {
 			return;
 		}
 
-		const cea708Char: IStyledChar = {
+		const cea708Char: StyledChar = {
 			character: char,
 			underline: this._underline,
 			italics: this._italics,
@@ -294,10 +292,10 @@ class Cea708Window {
 		};
 
 		const region: Region = createEmptyRegion();
-		if (this._justification === ETextJustification.LEFT) {
+		if (this._justification === TextJustification.LEFT) {
 			// LEFT justified.
 			region.align = "left";
-		} else if (this._justification === ETextJustification.RIGHT) {
+		} else if (this._justification === TextJustification.RIGHT) {
 			// RIGHT justified.
 			region.align = "right";
 		} else {

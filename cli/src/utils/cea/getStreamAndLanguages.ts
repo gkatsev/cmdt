@@ -1,5 +1,5 @@
 import type { Descriptor } from "../../manifest-parsers/dash/raw-dash.js";
-import ECeaSchemeUri from "../manifest/enum/ECeaSchemeUri.js";
+import { CeaSchemeUri } from "../manifest/types.js";
 
 /**
  * format: CC1=eng;CC3=swe
@@ -50,10 +50,10 @@ const getStreamAndLanguages = (accessibility: Descriptor): Array<[string, string
 		return [];
 	}
 	switch (schemeIdUri) {
-		case ECeaSchemeUri.CEA608:
+		case CeaSchemeUri.CEA608:
 			streamAndLanguages = getCea608Info(value);
 			break;
-		case ECeaSchemeUri.CEA708:
+		case CeaSchemeUri.CEA708:
 			streamAndLanguages = getCea708Info(value);
 			break;
 	}

@@ -2,8 +2,7 @@ import type winston from "winston";
 import { getInstance as getLogger } from "../../logger.js";
 import createView from "../createView.js";
 import uint8ToString from "../uint8ToString.js";
-import EEndian from "./enum/EEndian.js";
-import ESize from "./enum/ESize.js";
+import { Endian, Size } from "./types.js";
 
 class DataViewReader {
 	private _position = 0;
@@ -11,9 +10,9 @@ class DataViewReader {
 	private _littleEndian: boolean;
 	private logger: winston.Logger;
 
-	constructor(data: ArrayBuffer, endianess: EEndian) {
+	constructor(data: ArrayBuffer, endianess: Endian) {
 		this._dataView = createView(data, DataView) as DataView;
-		this._littleEndian = endianess === EEndian.LITTLE;
+		this._littleEndian = endianess === Endian.LITTLE;
 		this.logger = getLogger();
 	}
 
@@ -47,7 +46,7 @@ class DataViewReader {
 	public readUint8(): number {
 		try {
 			const value: number = this._dataView.getUint8(this._position);
-			this._position += ESize.UINT8;
+			this._position += Size.UINT8;
 
 			return value;
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
@@ -59,7 +58,7 @@ class DataViewReader {
 	public readUint16(): number {
 		try {
 			const value: number = this._dataView.getUint16(this._position, this._littleEndian);
-			this._position += ESize.UINT16;
+			this._position += Size.UINT16;
 
 			return value;
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
@@ -71,7 +70,7 @@ class DataViewReader {
 	public readUint32(): number {
 		try {
 			const value: number = this._dataView.getUint32(this._position, this._littleEndian);
-			this._position += ESize.UINT32;
+			this._position += Size.UINT32;
 
 			return value;
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
@@ -83,7 +82,7 @@ class DataViewReader {
 	public readInt32(): number {
 		try {
 			const value: number = this._dataView.getInt32(this._position, this._littleEndian);
-			this._position += ESize.UINT32;
+			this._position += Size.UINT32;
 
 			return value;
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
@@ -99,10 +98,10 @@ class DataViewReader {
 		try {
 			if (this._littleEndian) {
 				low = this._dataView.getUint32(this._position, true);
-				high = this._dataView.getUint32(this._position + ESize.UINT32, true);
+				high = this._dataView.getUint32(this._position + Size.UINT32, true);
 			} else {
 				high = this._dataView.getUint32(this._position, false);
-				low = this._dataView.getUint32(this._position + ESize.UINT32, false);
+				low = this._dataView.getUint32(this._position + Size.UINT32, false);
 			}
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
 		} catch (e) {
@@ -113,7 +112,7 @@ class DataViewReader {
 			throw this.overflowError();
 		}
 
-		this._position += ESize.UINT64;
+		this._position += Size.UINT64;
 
 		return high * 2 ** 32 + low;
 	}
@@ -136,13 +135,13 @@ class DataViewReader {
 			if (value === 0) {
 				break;
 			}
-			this._position += ESize.NUL_BYTE;
+			this._position += Size.NUL_BYTE;
 		}
 
 		const value: Uint8Array = createView(this._dataView, Uint8Array, start, this._position - start) as Uint8Array;
 
 		// Skip string termination.
-		this._position += ESize.NUL_BYTE;
+		this._position += Size.NUL_BYTE;
 
 		return uint8ToString(value);
 	}
@@ -200,10 +199,10 @@ class DataViewReader {
 		try {
 			if (this._littleEndian) {
 				low = this._dataView.getUint32(offset, true);
-				high = this._dataView.getUint32(offset + ESize.UINT32, true);
+				high = this._dataView.getUint32(offset + Size.UINT32, true);
 			} else {
 				high = this._dataView.getUint32(offset, false);
-				low = this._dataView.getUint32(offset + ESize.UINT32, false);
+				low = this._dataView.getUint32(offset + Size.UINT32, false);
 			}
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
 		} catch (e) {
@@ -259,10 +258,10 @@ class DataViewReader {
 		try {
 			if (this._littleEndian) {
 				this._dataView.setUint32(offset, low, true);
-				this._dataView.setUint32(offset + ESize.UINT32, high, true);
+				this._dataView.setUint32(offset + Size.UINT32, high, true);
 			} else {
 				this._dataView.setUint32(offset, high, false);
-				this._dataView.setUint32(offset + ESize.UINT32, low, false);
+				this._dataView.setUint32(offset + Size.UINT32, low, false);
 			}
 			// biome-ignore lint/correctness/noUnusedVariables: do not care about the specific error here
 		} catch (e) {

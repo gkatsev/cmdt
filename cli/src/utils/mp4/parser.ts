@@ -1,28 +1,19 @@
 import createView from "../createView.js";
 import hexToUint8 from "../hexToUint8.js";
-import type ESchemeUri from "../manifest/enum/ESchemeUri.js";
-import uint8ToString from "../uint8ToString.js";
+import type { SchemeUri } from "../manifest/types.js";
 
 import DataViewReader from "./dataViewReader.js";
-import EBoxFormat from "./enum/EBoxFormat.js";
-import EEndian from "./enum/EEndian.js";
-import ESize from "./enum/ESize.js";
+import { BoxFormat, Endian, Size } from "./types.js";
 import type {
 	Elst,
 	Emsg,
 	Frma,
-	Iden,
 	Mdat,
 	Mdhd,
-	Medh,
 	Mvhd,
 	ParsedBox,
-	Payl,
-	Prft,
 	Sidx,
 	SidxReference,
-	Sttg,
-	Tenc,
 	Tfdt,
 	Tfhd,
 	Tkhd,
@@ -34,7 +25,7 @@ type CallbackType = (box: ParsedBox) => void;
 
 // TODO: spike codem-isoboxer pkg
 class Mp4Parser {
-	private headers = new Map<string, EBoxFormat>();
+	private headers = new Map<string, BoxFormat>();
 	private boxDefinitions = new Map<string, CallbackType>();
 
 	private static parseData(box: ParsedBox): Uint8Array {
@@ -159,20 +150,6 @@ class Mp4Parser {
 		return { codec };
 	}
 
-	public static parseIden(box: ParsedBox): Iden {
-		const { reader, start, size } = box;
-		const all: number = size - reader.getPosition();
-		const data: Uint8Array = reader.readBytes(all);
-		const id: string = uint8ToString(data);
-
-		// skip the rest
-		reader.skip(start + size - reader.getPosition());
-
-		return {
-			id,
-		};
-	}
-
 	public static parseMdat(box: ParsedBox): Mdat {
 		return {
 			data: Mp4Parser.parseData(box),
@@ -182,11 +159,11 @@ class Mp4Parser {
 	public static parseMdhd(box: ParsedBox): Mdhd {
 		const { reader, version, start, size } = box;
 		if (version === 1) {
-			reader.skip(ESize.UINT64); // Skip "creation_time"
-			reader.skip(ESize.UINT64); // Skip "modification_time"
+			reader.skip(Size.UINT64); // Skip "creation_time"
+			reader.skip(Size.UINT64); // Skip "modification_time"
 		} else {
-			reader.skip(ESize.UINT32); // Skip "creation_time"
-			reader.skip(ESize.UINT32); // Skip "modification_time"
+			reader.skip(Size.UINT32); // Skip "creation_time"
+			reader.skip(Size.UINT32); // Skip "modification_time"
 		}
 
 		const timescale: number = reader.readUint32();
@@ -199,63 +176,20 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseMehd(box: ParsedBox): Medh {
-		const { reader, version } = box;
-		let fragmentDuration: number;
-		if (version === 1) {
-			fragmentDuration = reader.readUint64();
-		} else {
-			fragmentDuration = reader.readUint32();
-		}
-
-		return {
-			fragmentDuration,
-		};
-	}
-
 	public static parseMvhd(box: ParsedBox): Mvhd {
 		const { reader, version } = box;
 		if (version === 1) {
-			reader.skip(ESize.UINT64); // Skip "creation_time"
-			reader.skip(ESize.UINT64); // Skip "modification_time"
+			reader.skip(Size.UINT64); // Skip "creation_time"
+			reader.skip(Size.UINT64); // Skip "modification_time"
 		} else {
-			reader.skip(ESize.UINT32); // Skip "creation_time"
-			reader.skip(ESize.UINT32); // Skip "modification_time"
+			reader.skip(Size.UINT32); // Skip "creation_time"
+			reader.skip(Size.UINT32); // Skip "modification_time"
 		}
 
 		const timescale: number = reader.readUint32();
 
 		return {
 			timescale,
-		};
-	}
-
-	public static parsePayl(box: ParsedBox): Payl {
-		return {
-			text: box.reader.readTerminatedString(),
-		};
-	}
-
-	public static parsePrft(box: ParsedBox): Prft {
-		box.reader.readUint32(); // Ignore referenceTrackId
-
-		const ntpTimestampSec: number = box.reader.readUint32();
-		const ntpTimestampFrac: number = box.reader.readUint32();
-		const ntpTimestamp: number = ntpTimestampSec * 1000 + (ntpTimestampFrac / 2 ** 32) * 1000;
-		let mediaTime: number;
-
-		if (box.version === 0) {
-			mediaTime = box.reader.readUint32();
-		} else {
-			mediaTime = box.reader.readUint64();
-		}
-
-		const ntpEpoch: Date = new Date(Date.UTC(1900, 0, 1, 0, 0, 0));
-		const wallClockTimeSecs: number = new Date(ntpEpoch.getTime() + ntpTimestamp).getTime() / 1000;
-
-		return {
-			wallClockTimeSecs,
-			mediaTime,
 		};
 	}
 
@@ -304,60 +238,6 @@ class Mp4Parser {
 		};
 	}
 
-	public static parseSttg(reader: DataViewReader, size: number): Sttg {
-		const all: number = size - reader.getPosition();
-		const data: Uint8Array = reader.readBytes(all);
-		const settings: string = uint8ToString(data);
-
-		return {
-			settings,
-		};
-	}
-
-	public static parseTenc(box: ParsedBox): Tenc {
-		const { reader, version } = box;
-		// Read reserved field
-		reader.readUint8();
-
-		let cryptByteBlock: number | null = null;
-		let skipByteBlock: number | null = null;
-		if (version === 1) {
-			const byteBlocks: number = reader.readUint8();
-			cryptByteBlock = byteBlocks >> 4;
-			skipByteBlock = byteBlocks & 0xf;
-		}
-
-		const isProtected: number = reader.readUint8();
-
-		const perSampleIvSize: number = reader.readUint8();
-
-		const kid: Uint8Array = new Uint8Array(16);
-		for (let i = 0; i < 16; i++) {
-			kid[i] = reader.readUint8();
-		}
-
-		let constantIVsize: number | null = null;
-		let constantIV: Uint8Array | null = null;
-		if (isProtected === 1 && perSampleIvSize === 0) {
-			constantIVsize = reader.readUint8();
-
-			constantIV = new Uint8Array(constantIVsize);
-			for (let i = 0; i < constantIVsize; i++) {
-				constantIV[i] = reader.readUint8();
-			}
-		}
-
-		return {
-			cryptByteBlock,
-			skipByteBlock,
-			isProtected,
-			perSampleIvSize,
-			kid,
-			constantIVsize,
-			constantIV,
-		};
-	}
-
 	public static parseTfdt(box: ParsedBox): Tfdt {
 		const { reader, version } = box;
 		const baseMediaDecodeTime: number = version === 1 ? reader.readUint64() : reader.readUint32();
@@ -377,12 +257,12 @@ class Mp4Parser {
 
 		// Skip "base_data_offset" if present
 		if (flags & 0x000001) {
-			reader.skip(ESize.UINT64);
+			reader.skip(Size.UINT64);
 		}
 
 		// Skip "sample_description_index" if present
 		if (flags & 0x000002) {
-			reader.skip(ESize.UINT32);
+			reader.skip(Size.UINT32);
 		}
 
 		// Read "default_sample_duration" if present
@@ -458,7 +338,7 @@ class Mp4Parser {
 
 		// Skip "first_sample_flags" if present
 		if (flags & 0x000004) {
-			reader.skip(ESize.UINT32);
+			reader.skip(Size.UINT32);
 		}
 
 		for (let i = 0; i < sampleCount; i++) {
@@ -480,7 +360,7 @@ class Mp4Parser {
 
 			// Skip "sample_flags" if present
 			if (flags & 0x000400) {
-				reader.skip(ESize.UINT32);
+				reader.skip(Size.UINT32);
 			}
 
 			// Read "sample_time_offset" if present
@@ -506,8 +386,8 @@ class Mp4Parser {
 			// No adjustment needed for this box.
 		} else if (sizeField === 1) {
 			// Means "use 64-bit size box"
-			reader.setUint32(offset + ESize.UINT64, boxSize >> 32);
-			reader.setUint32(offset + ESize.UINT64 + 4, boxSize & 0xffffffff);
+			reader.setUint32(offset + Size.UINT64, boxSize >> 32);
+			reader.setUint32(offset + Size.UINT64 + 4, boxSize & 0xffffffff);
 		} else {
 			// Normal 32-bit size field
 			reader.setUint32(offset, boxSize);
@@ -515,7 +395,7 @@ class Mp4Parser {
 	}
 
 	public static updateBoxType(reader: DataViewReader, boxStartPosition: number, boxType: number): void {
-		const offset: number = boxStartPosition + ESize.UINT32; // size
+		const offset: number = boxStartPosition + Size.UINT32; // size
 		reader.setUint32(offset, boxType); // type
 	}
 
@@ -526,12 +406,12 @@ class Mp4Parser {
 		mediaTime: number,
 	): void {
 		let offset: number = payloadPosition;
-		offset += ESize.UINT32; // entry_count
+		offset += Size.UINT32; // entry_count
 		if (version === 1) {
-			offset += ESize.UINT64; // segment_duration
+			offset += Size.UINT64; // segment_duration
 			reader.setUint64(offset, mediaTime); // media_time
 		} else {
-			offset += ESize.UINT32; // segment_duration
+			offset += Size.UINT32; // segment_duration
 			reader.setUint32(offset, mediaTime); // media_time
 		}
 	}
@@ -565,11 +445,11 @@ class Mp4Parser {
 	): void {
 		let offset: number = payloadPosition;
 		if (version === 1) {
-			offset += ESize.UINT64; // Skip "creation_time"
-			offset += ESize.UINT64; // Skip "modification_time"
+			offset += Size.UINT64; // Skip "creation_time"
+			offset += Size.UINT64; // Skip "modification_time"
 		} else {
-			offset += ESize.UINT32; // Skip "creation_time"
-			offset += ESize.UINT32; // Skip "modification_time"
+			offset += Size.UINT32; // Skip "creation_time"
+			offset += Size.UINT32; // Skip "modification_time"
 		}
 
 		reader.setUint32(offset, timescale);
@@ -583,11 +463,11 @@ class Mp4Parser {
 	): void {
 		let offset: number = payloadPosition;
 		if (version === 1) {
-			offset += ESize.UINT64; // Skip "creation_time"
-			offset += ESize.UINT64; // Skip "modification_time"
+			offset += Size.UINT64; // Skip "creation_time"
+			offset += Size.UINT64; // Skip "modification_time"
 		} else {
-			offset += ESize.UINT32; // Skip "creation_time"
-			offset += ESize.UINT32; // Skip "modification_time"
+			offset += Size.UINT32; // Skip "creation_time"
+			offset += Size.UINT32; // Skip "modification_time"
 		}
 
 		reader.setUint32(offset, timescale);
@@ -600,11 +480,11 @@ class Mp4Parser {
 		timescale: number,
 	): void {
 		let offset: number = payloadPosition;
-		offset += ESize.UINT32; // Skip "reference_ID"
+		offset += Size.UINT32; // Skip "reference_ID"
 
 		const originalTimescale: number = reader.getUint32(offset);
 		reader.setUint32(offset, timescale); // update "timescale"
-		offset += ESize.UINT32; // Skip "timescale"
+		offset += Size.UINT32; // Skip "timescale"
 
 		if (version === 0) {
 			const originalEarliestPresentationTime: number = reader.getUint32(offset);
@@ -613,8 +493,8 @@ class Mp4Parser {
 				(timescale * originalEarliestPresentationTime) / originalTimescale,
 			);
 			reader.setUint32(offset, earliestPresentationTime); // update "earliest_presentation_time"
-			offset += ESize.UINT32; // skip "earliest_presentation_time"
-			offset += ESize.UINT32; // skip "first_offset"
+			offset += Size.UINT32; // skip "earliest_presentation_time"
+			offset += Size.UINT32; // skip "first_offset"
 		} else {
 			const originalEarliestPresentationTime: number = reader.getUint64(offset);
 			// x:timescale=originalEarliestPresentationTime:originalTimescale
@@ -622,28 +502,28 @@ class Mp4Parser {
 				(timescale * originalEarliestPresentationTime) / originalTimescale,
 			);
 			reader.setUint64(offset, earliestPresentationTime); // update "earliest_presentation_time"
-			offset += ESize.UINT64; // skip "earliest_presentation_time"
-			offset += ESize.UINT64; // skip "first_offset"
+			offset += Size.UINT64; // skip "earliest_presentation_time"
+			offset += Size.UINT64; // skip "first_offset"
 		}
 
 		// Skip reserved (16 bits)
-		offset += ESize.UINT16;
+		offset += Size.UINT16;
 
 		// read references
 		const referenceCount: number = reader.getUint16(offset);
-		offset += ESize.UINT16; // Skip "referenceCount"
+		offset += Size.UINT16; // Skip "referenceCount"
 		for (let i = 0; i < referenceCount; i++) {
-			offset += ESize.UINT32; // skip "referenceType" and "referenceSize"
+			offset += Size.UINT32; // skip "referenceType" and "referenceSize"
 
 			const originalSubsegmentDuration: number = reader.getUint32(offset);
 			// x:timescale=originalSubsegmentDuration:originalTimescale
 			const subsegmentDuration: number = Math.floor((timescale * originalSubsegmentDuration) / originalTimescale);
 			reader.setUint32(offset, subsegmentDuration); // update "subsegment_duration"
-			offset += ESize.UINT32; // Skip "subsegment_duration"
+			offset += Size.UINT32; // Skip "subsegment_duration"
 
 			// Skipping 1 bit for |startsWithSap|, 3 bits for |sapType|, and 28 bits
 			// for |sapDeltaTime|
-			offset += ESize.UINT32;
+			offset += Size.UINT32;
 		}
 	}
 
@@ -677,16 +557,16 @@ class Mp4Parser {
 	): void {
 		let offset: number = payloadPosition;
 
-		offset += ESize.UINT32; // Skip "track_ID"
+		offset += Size.UINT32; // Skip "track_ID"
 
 		// Skip "base_data_offset" if present
 		if (flags & 0x000001) {
-			offset += ESize.UINT64;
+			offset += Size.UINT64;
 		}
 
 		// Skip "sample_description_index" if present
 		if (flags & 0x000002) {
-			offset += ESize.UINT32;
+			offset += Size.UINT32;
 		}
 
 		// update "default_sample_duration" if present
@@ -706,15 +586,15 @@ class Mp4Parser {
 	): void {
 		let offset: number = payloadPosition;
 
-		offset += ESize.UINT32; // Skip "track_ID"
-		offset += ESize.UINT32; // Skip "default_sample_description_index"
+		offset += Size.UINT32; // Skip "track_ID"
+		offset += Size.UINT32; // Skip "default_sample_description_index"
 
 		const originalSampleDuration: number = reader.getUint32(offset);
 		// x:timescale=originalSampleDuration:originalTimescale
 		const defaultSampleDuration: number = Math.floor((timescale * originalSampleDuration) / originalTimescale);
 		reader.setUint32(offset, defaultSampleDuration);
 
-		offset += ESize.UINT32; // Skip "default_sample_size"
+		offset += Size.UINT32; // Skip "default_sample_size"
 	}
 
 	public static updateTrunTimescale(
@@ -727,16 +607,16 @@ class Mp4Parser {
 	): void {
 		let offset: number = payloadPosition;
 		const sampleCount: number = reader.getUint32(offset);
-		offset += ESize.UINT32;
+		offset += Size.UINT32;
 
 		// Skip "data_offset" if present
 		if (flags & 0x000001) {
-			offset += ESize.UINT32;
+			offset += Size.UINT32;
 		}
 
 		// Skip "first_sample_flags" if present
 		if (flags & 0x000004) {
-			offset += ESize.UINT32;
+			offset += Size.UINT32;
 		}
 
 		for (let i = 0; i < sampleCount; i++) {
@@ -746,17 +626,17 @@ class Mp4Parser {
 				// x:timescale=originalSampleDuration:originalTimescale
 				const sampleDuration: number = Math.floor((timescale * originalSampleDuration) / originalTimescale);
 				reader.setUint32(offset, sampleDuration);
-				offset += ESize.UINT32;
+				offset += Size.UINT32;
 			}
 
 			// Read "sample_size" if present
 			if (flags & 0x000200) {
-				offset += ESize.UINT32;
+				offset += Size.UINT32;
 			}
 
 			// Skip "sample_flags" if present
 			if (flags & 0x000400) {
-				offset += ESize.UINT32;
+				offset += Size.UINT32;
 			}
 
 			// Update "sample_time_offset" if present
@@ -766,13 +646,13 @@ class Mp4Parser {
 					// x:timescale=originalSampleTimeOffset:originalTimescale
 					const sampleTimeOffset: number = Math.floor((timescale * originalSampleTimeOffset) / originalTimescale);
 					reader.setUint32(offset, sampleTimeOffset);
-					offset += ESize.UINT32;
+					offset += Size.UINT32;
 				} else {
 					const originalSampleTimeOffset: number = reader.getInt32(offset);
 					// x:timescale=originalSampleTimeOffset:originalTimescale
 					const sampleTimeOffset: number = Math.floor((timescale * originalSampleTimeOffset) / originalTimescale);
 					reader.setInt32(offset, sampleTimeOffset);
-					offset += ESize.UINT32;
+					offset += Size.UINT32;
 				}
 			}
 		}
@@ -790,7 +670,7 @@ class Mp4Parser {
 		sinfBox.set(defaultKidData, sinfBox.byteLength - 16);
 	}
 
-	public static createPssh(data: Uint8Array, schemeIdUri: ESchemeUri): Uint8Array {
+	public static createPssh(data: Uint8Array, schemeIdUri: SchemeUri): Uint8Array {
 		const systemIdStr = schemeIdUri.split(":")[2];
 		if (!systemIdStr) {
 			throw new Error("Invalid schemeIdUri");
@@ -918,7 +798,7 @@ class Mp4Parser {
 			let version = 0;
 			let flags = 0;
 
-			if (this.headers.get(name) === EBoxFormat.FULL_BOX) {
+			if (this.headers.get(name) === BoxFormat.FULL_BOX) {
 				const versionAndFlags: number = reader.readUint32();
 				version = versionAndFlags >>> 24;
 				flags = versionAndFlags & 0xffffff;
@@ -946,7 +826,7 @@ class Mp4Parser {
 		}
 	}
 
-	public box(name: string, definition: CallbackType, format = EBoxFormat.BASIC_BOX): Mp4Parser {
+	public box(name: string, definition: CallbackType, format = BoxFormat.BASIC_BOX): Mp4Parser {
 		this.headers.set(name, format);
 		this.boxDefinitions.set(name, definition);
 
@@ -954,11 +834,11 @@ class Mp4Parser {
 	}
 
 	public fullBox(name: string, definition: CallbackType): Mp4Parser {
-		return this.box(name, definition, EBoxFormat.FULL_BOX);
+		return this.box(name, definition, BoxFormat.FULL_BOX);
 	}
 
 	public parse(data: ArrayBuffer): void {
-		const reader: DataViewReader = new DataViewReader(data, EEndian.BIG);
+		const reader: DataViewReader = new DataViewReader(data, Endian.BIG);
 		while (reader.hasMoreData()) {
 			this.parseNext(reader);
 		}

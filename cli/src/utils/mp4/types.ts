@@ -1,6 +1,25 @@
 import type DataViewReader from "./dataViewReader.js";
 import type Mp4Parser from "./parser.js";
 
+// Enums
+export enum BoxFormat {
+	BASIC_BOX = "BASIC_BOX",
+	FULL_BOX = "FULL_BOX",
+}
+
+export enum Endian {
+	BIG = "BIG",
+	LITTLE = "LITTLE",
+}
+
+export enum Size {
+	NUL_BYTE = 1,
+	UINT8 = 1,
+	UINT16 = 2,
+	UINT32 = 4,
+	UINT64 = 8,
+}
+
 export type Emsg = {
 	id: number;
 	eventDuration: number;
@@ -23,20 +42,12 @@ export type Frma = {
 	codec: string;
 };
 
-export type Iden = {
-	id: string;
-};
-
 export type Mdat = {
 	data: Uint8Array;
 };
 
 export type Mdhd = {
 	timescale: number;
-};
-
-export type Medh = {
-	fragmentDuration: number;
 };
 
 export type Mvhd = {
@@ -54,15 +65,6 @@ export type ParsedBox = {
 	start: number;
 };
 
-export type Payl = {
-	text: string;
-};
-
-export type Prft = {
-	wallClockTimeSecs: number;
-	mediaTime: number;
-};
-
 export type SidxReference = {
 	referenceType: number;
 	referenceSize: number;
@@ -75,20 +77,6 @@ export type Sidx = {
 	earliestPresentationTime: number;
 	firstOffset: number;
 	references: Array<SidxReference>;
-};
-
-export type Sttg = {
-	settings: string;
-};
-
-export type Tenc = {
-	cryptByteBlock: number | null;
-	skipByteBlock: number | null;
-	isProtected: number;
-	perSampleIvSize: number;
-	kid: Uint8Array;
-	constantIVsize: number | null;
-	constantIV: Uint8Array | null;
 };
 
 export type Tfdt = {

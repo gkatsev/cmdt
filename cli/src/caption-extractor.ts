@@ -8,7 +8,7 @@ import { getOpts } from "./cli-opts.js";
 import { getInstance as getLogger } from "./logger.js";
 import type { Report } from "./report.js";
 import CeaParser from "./text/cea/parser.js";
-import ECeaSchemeUri from "./utils/manifest/enum/ECeaSchemeUri.js";
+import { CeaSchemeUri } from "./utils/manifest/types.js";
 
 export type Captions = Record<string, { stream: string; cues: Array<Cue> }>;
 
@@ -36,7 +36,7 @@ export class CaptionExtractor {
 		await mkdirp(path.resolve(getOpts().output, "captions"));
 
 		for (const representation of this.manifest.video.values()) {
-			const captionUri = representation.hasCaptions.cea608 ? ECeaSchemeUri.CEA608 : ECeaSchemeUri.CEA708;
+			const captionUri = representation.hasCaptions.cea608 ? CeaSchemeUri.CEA608 : CeaSchemeUri.CEA708;
 			const parsers = new Map<string, CeaParser>();
 			for (const segment of representation.segments) {
 				if (showProgress) {

@@ -1,8 +1,7 @@
 import type { Cue } from "cmdt-shared";
 import Cea708Window from "./cea708Window.js";
 import type DtvccPacket from "./dtvccPacket.js";
-import type ETextJustification from "./enum/ETextJustification.js";
-import type ICea708ClosedCaptionByte from "./interfaces/ICea708ClosedCaptionByte.js";
+import type { TextJustification, Cea708ClosedCaptionByte } from "../../types.js";
 
 // CEA-708 closed captions service as defined by CEA-708-E. A decoder can own up to 63 services. Each service owns eight windows
 class Cea708Service {
@@ -419,7 +418,7 @@ class Cea708Service {
 
 		// Word wrap is outdated as of CEA-708-E, so we ignore those bits.
 		// Extract the text justification and set it on the ceaWindow.
-		const justification: ETextJustification = b3 & 0x03;
+		const justification: TextJustification = b3 & 0x03;
 		this._currentCeaWindow.setJustification(justification);
 	}
 
@@ -524,13 +523,13 @@ class Cea708Service {
 
 	// Processes a CEA-708 control code.
 	public handleCea708ControlCode(dtvccPacket: DtvccPacket): Cue | null {
-		const blockData: ICea708ClosedCaptionByte = dtvccPacket.readByte();
+		const blockData: Cea708ClosedCaptionByte = dtvccPacket.readByte();
 		let controlCode: number = blockData.value;
 		const pts: number = blockData.pts;
 
 		// Read extended control code if needed.
 		if (controlCode === this._EXT_CEA708_CTRL_CODE_BYTE1) {
-			const extendedControlCodeBlock: ICea708ClosedCaptionByte = dtvccPacket.readByte();
+			const extendedControlCodeBlock: Cea708ClosedCaptionByte = dtvccPacket.readByte();
 			controlCode = (controlCode << 16) | extendedControlCodeBlock.value;
 		}
 

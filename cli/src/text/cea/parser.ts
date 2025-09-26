@@ -1,14 +1,13 @@
 import type { Cue } from "cmdt-shared";
 import type winston from "winston";
 import { getInstance as getLogger } from "../../logger.js";
-import type ECeaSchemeUri from "../../utils/manifest/enum/ECeaSchemeUri.js";
-import type IDataSegment from "../../utils/manifest/interfaces/IDataSegment.js";
+import type { CeaSchemeUri, DataSegment } from "../../utils/manifest/types.js";
 import type { Frma, Mdhd, ParsedBox, Tfdt, Tfhd, Tkhd, Trex, Trun } from "../../utils/mp4/types.js";
 import Mp4Parser from "../../utils/mp4/parser.js";
-import EBitstreamFormat from "../enum/EBitstreamFormat.js";
+import { BitstreamFormat } from "../types.js";
 import CeaDecoder from "./ceaDecoder.js";
 
-type CeaSegment = IDataSegment & { periodId: string };
+type CeaSegment = DataSegment & { periodId: string };
 
 class CeaParser {
 	private _ceaDecoder: CeaDecoder;
@@ -17,16 +16,16 @@ class CeaParser {
 	private _defaultSampleDuration = 0;
 	private _defaultSampleSize = 0;
 	private _trackIdToTimescale = new Map<number, number>();
-	private _bitstreamFormat: EBitstreamFormat = EBitstreamFormat.UNKNOWN;
+	private _bitstreamFormat: BitstreamFormat = BitstreamFormat.UNKNOWN;
 
-	private _CODEC_BITSTREAM_MAP: Record<string, EBitstreamFormat> = {
-		avc1: EBitstreamFormat.H264,
-		avc3: EBitstreamFormat.H264,
-		hev1: EBitstreamFormat.H265,
-		hvc1: EBitstreamFormat.H265,
+	private _CODEC_BITSTREAM_MAP: Record<string, BitstreamFormat> = {
+		avc1: BitstreamFormat.H264,
+		avc3: BitstreamFormat.H264,
+		hev1: BitstreamFormat.H265,
+		hvc1: BitstreamFormat.H265,
 		// Dolby vision is also H265.
-		dvh1: EBitstreamFormat.H265,
-		dvhe: EBitstreamFormat.H265,
+		dvh1: BitstreamFormat.H265,
+		dvhe: BitstreamFormat.H265,
 	};
 
 	private _DEFAULT_TIMESCALE = 90000;
@@ -99,7 +98,7 @@ class CeaParser {
 			})
 			.parse(data);
 
-		if (this._bitstreamFormat === EBitstreamFormat.UNKNOWN) {
+		if (this._bitstreamFormat === BitstreamFormat.UNKNOWN) {
 			const message: string = "Unable to determine bitstream format for CEA parsing";
 			this.logger.warn(message);
 		}
@@ -176,7 +175,7 @@ class CeaParser {
 	}
 
 	private setBitstreamFormat(codec: string): void {
-		const bitstreamFormat: EBitstreamFormat | undefined = this._CODEC_BITSTREAM_MAP[codec];
+		const bitstreamFormat: BitstreamFormat | undefined = this._CODEC_BITSTREAM_MAP[codec];
 		if (bitstreamFormat) {
 			this._bitstreamFormat = bitstreamFormat;
 		}
@@ -188,7 +187,7 @@ class CeaParser {
 		this._ceaDecoder.clear();
 	}
 
-	public parse(segment: CeaSegment, ceaSchemeIdUri: ECeaSchemeUri): Array<Cue> {
+	public parse(segment: CeaSegment, ceaSchemeIdUri: CeaSchemeUri): Array<Cue> {
 		const periodId: string = segment.periodId;
 		const isNewPeriod: boolean = this._currentPeriodId !== periodId;
 		this._currentPeriodId = periodId;
@@ -212,7 +211,7 @@ class CeaParser {
 			return [];
 		}
 
-		if (this._bitstreamFormat === EBitstreamFormat.UNKNOWN) {
+		if (this._bitstreamFormat === BitstreamFormat.UNKNOWN) {
 			// We don't know how to extract SEI from this.
 			return [];
 		}
@@ -280,12 +279,12 @@ class CeaParser {
 					let naluHeaderSize = 1;
 
 					switch (this._bitstreamFormat) {
-						case EBitstreamFormat.H264:
+						case BitstreamFormat.H264:
 							naluType = naluHeader & 0x1f;
 							isSeiMessage = naluType === this._H264_NALU_TYPE_SEI;
 							break;
 
-						case EBitstreamFormat.H265:
+						case BitstreamFormat.H265:
 							naluHeaderSize = 2;
 							reader.skip(1);
 							naluType = (naluHeader >> 1) & 0x3f;

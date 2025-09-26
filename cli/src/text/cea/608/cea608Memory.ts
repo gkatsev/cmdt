@@ -1,12 +1,11 @@
 import type { Cue } from "cmdt-shared";
 import getParsedCaption from "../../../utils/cea/getParsedCaption.js";
 import { CC_ROWS, DEFAULT_BG_COLOR, DEFAULT_TXT_COLOR } from "../../../utils/textConstants.js";
-import type IStyledChar from "../interfaces/IStyledChar.js";
-import ECharSet from "./enum/ECharSet.js";
+import { CharSet, type StyledChar } from "../../types.js";
 
 class Cea608Memory {
 	// Buffer for storing decoded characters
-	private _rows: Array<Array<IStyledChar>> = [];
+	private _rows: Array<Array<StyledChar>> = [];
 	// Current row
 	private _row = -1;
 	// Number of rows in the scroll window. Used for rollup mode
@@ -206,7 +205,7 @@ class Cea608Memory {
 	}
 
 	// Adds a character to the buffer.
-	public addChar(set: ECharSet, b: number): void {
+	public addChar(set: CharSet, b: number): void {
 		// Valid chars are in the range [0x20, 0x7f]
 		if (b < 0x20 || b > 0x7f) {
 			return;
@@ -214,7 +213,7 @@ class Cea608Memory {
 
 		let char: string | undefined = "";
 		switch (set) {
-			case ECharSet.BASIC_NORTH_AMERICAN:
+			case CharSet.BASIC_NORTH_AMERICAN:
 				if (this._BASIC_NORTH_AMERICAN_CHARS.has(b)) {
 					char = this._BASIC_NORTH_AMERICAN_CHARS.get(b);
 				} else {
@@ -222,22 +221,22 @@ class Cea608Memory {
 					char = String.fromCharCode(b);
 				}
 				break;
-			case ECharSet.SPECIAL_NORTH_AMERICAN:
+			case CharSet.SPECIAL_NORTH_AMERICAN:
 				char = this._SPECIAL_NORTH_AMERICAN_CHARS.get(b);
 				break;
-			case ECharSet.SPANISH_FRENCH:
+			case CharSet.SPANISH_FRENCH:
 				// Extended charset does a BS over preceding char, 6.4.2 EIA-608-B.
 				this.eraseChar();
 				char = this._EXTENDED_SPANISH_FRENCH.get(b);
 				break;
-			case ECharSet.PORTUGUESE_GERMAN:
+			case CharSet.PORTUGUESE_GERMAN:
 				this.eraseChar();
 				char = this._EXTENDED_PORTUGUESE_GERMAN.get(b);
 				break;
 		}
 
 		if (char) {
-			const styledChar: IStyledChar = {
+			const styledChar: StyledChar = {
 				character: char,
 				underline: this._underline,
 				italics: this._italics,
@@ -265,7 +264,7 @@ class Cea608Memory {
 				if (!srcBytes) {
 					continue;
 				}
-				this._rows[dst + i] = srcBytes.map((e: IStyledChar) => e);
+				this._rows[dst + i] = srcBytes.map((e: StyledChar) => e);
 			}
 		} else {
 			for (let i = 0; i < count; i++) {
@@ -273,7 +272,7 @@ class Cea608Memory {
 				if (!srcBytes) {
 					continue;
 				}
-				this._rows[dst + i] = srcBytes.map((e: IStyledChar) => e);
+				this._rows[dst + i] = srcBytes.map((e: StyledChar) => e);
 			}
 		}
 	}
