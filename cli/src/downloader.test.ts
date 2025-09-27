@@ -1,76 +1,39 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import axios from "axios";
-import type { Manifest, MediaType, Representation, Segment } from "cmdt-shared";
+import { type Manifest, MediaType, type Representation } from "cmdt-shared";
 import { UniqueRepresentationMap } from "cmdt-shared";
 import { mkdirp } from "mkdirp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as cliOpts from "./cli-opts.js";
+import { getOpts } from "./cli-opts.js";
+
+import { representationFactory } from "../test/factories/representation.js";
+import { manifestFactory } from "../test/factories/manifest.js";
+
 import { SegmentDownloader } from "./downloader.js";
 
 // Mock dependencies
 vi.mock("node:fs/promises");
 vi.mock("mkdirp");
 vi.mock("cli-progress");
-vi.mock("./cli-opts.js");
 
-// Note: Logger and axios are already globally mocked in test/setup.ts
-
-const mockedCliOpts = vi.mocked(cliOpts);
+// Note: Logger, axios, and cli-opts are already globally mocked in test/setup.ts
 
 describe("SegmentDownloader", () => {
 	let downloader: SegmentDownloader;
 	let mockManifest: Manifest;
 	let mockRepresentation: Representation;
-	let mockSegments: Segment[];
 
 	beforeEach(() => {
-		// Reset all mocks
+		// Reset all mocks but preserve global mocks
 		vi.clearAllMocks();
 
-		// Create mock segments
-		mockSegments = [
-			{
-				startTime: 0,
-				duration: 4000,
-				url: "segment1.mp4",
-				initSegmentUrl: "init.mp4",
-			},
-			{
-				startTime: 4000,
-				duration: 4000,
-				url: "segment2.mp4",
-				initSegmentUrl: "init.mp4",
-			},
-		];
+		mockManifest = manifestFactory.build({}, { transient: { numVideoRepresentations: 1, numSegments: 2 } });
 
-		// Create mock representation
-		mockRepresentation = {
-			id: "video-1080p",
-			segments: mockSegments,
-			type: "video" as MediaType,
-			width: 1920,
-			height: 1080,
-			bandwidth: 5000000,
-			hasCaptions: { cea608: false, cea708: false },
-			codecs: "avc1.640028",
-		};
-
-		// Create mock manifest
-		const videoMap = new UniqueRepresentationMap();
-		videoMap.add(mockRepresentation);
-
-		mockManifest = {
-			url: new URL("https://example.com/manifest.mpd"),
-			video: videoMap,
-			audio: new UniqueRepresentationMap(),
-			images: new UniqueRepresentationMap(),
-			captionStreamToLanguage: {},
-			periods: [],
-		};
+		mockRepresentation = mockManifest.video.values().next().value as Representation;
 
 		// Mock CLI options - override the global mock for this test
-		mockedCliOpts.getOpts.mockReturnValue({
+		vi.mocked(getOpts).mockReturnValue({
 			manifest: "https://example.com/manifest.mpd",
 			output: "/tmp/download",
 			skipDownload: undefined, // Boolean flags are undefined when not set
@@ -100,32 +63,28 @@ describe("SegmentDownloader", () => {
 			const initEntry = queue.find((entry) => entry.destFile.includes("init"));
 			expect(initEntry).toBeDefined();
 			expect(initEntry?.url).toBe("https://example.com/init.mp4");
-			expect(initEntry?.destDir).toBe(path.resolve("/tmp/download", "video/representation-video-1080p-1920x1080"));
-			expect(initEntry?.destFile).toBe("0-init-init.mp4");
+			expect(initEntry?.destDir).toBe(path.resolve("/tmp/download", "video/representation-video-1-320x240"));
+			expect(initEntry?.destFile).toBe("1000-init-init.mp4");
 			expect(initEntry?.representation).toBe(mockRepresentation);
 
 			// Check media segment entries
 			const mediaEntries = queue.filter((entry) => !entry.destFile.includes("init"));
 			expect(mediaEntries).toHaveLength(2);
 
-			expect(mediaEntries[0]?.url).toBe("https://example.com/segment1.mp4");
-			expect(mediaEntries[0]?.destFile).toBe("0-segment1.mp4");
-			expect(mediaEntries[0]?.segment).toBe(mockSegments[0]);
+			expect(mediaEntries[0]?.url).toBe("https://example.com/segment-1.mp4");
+			expect(mediaEntries[0]?.destFile).toBe("1000-segment-1.mp4");
+			expect(mediaEntries[0]?.segment).toBe(mockRepresentation.segments[0]);
 
-			expect(mediaEntries[1]?.url).toBe("https://example.com/segment2.mp4");
-			expect(mediaEntries[1]?.destFile).toBe("4000-segment2.mp4");
-			expect(mediaEntries[1]?.segment).toBe(mockSegments[1]);
+			expect(mediaEntries[1]?.url).toBe("https://example.com/segment-2.mp4");
+			expect(mediaEntries[1]?.destFile).toBe("2000-segment-2.mp4");
+			expect(mediaEntries[1]?.segment).toBe(mockRepresentation.segments[1]);
 		});
 
 		it("should handle representations without dimensions", async () => {
-			const audioRep: Representation = {
-				id: "audio-128k",
-				segments: [{ startTime: 0, duration: 4000, url: "audio.mp4" }],
-				type: "audio" as MediaType,
-				bandwidth: 128000,
-				hasCaptions: { cea608: false, cea708: false },
-				language: "en",
-			};
+			const audioRep: Representation = representationFactory.build(
+				{ type: MediaType.Audio },
+				{ transient: { numSegments: 1 } },
+			);
 
 			const audioMap = new UniqueRepresentationMap();
 			audioMap.add(audioRep);
@@ -134,12 +93,12 @@ describe("SegmentDownloader", () => {
 			const queue = await downloader.download();
 			const audioEntry = queue.find((entry) => entry.destDir.includes("audio"));
 
-			expect(audioEntry?.destDir).toBe(path.resolve("/tmp/download", "audio/representation-audio-128k"));
+			expect(audioEntry?.destDir).toBe(path.resolve("/tmp/download", "audio/representation-audio-2"));
 		});
 
 		it("should handle relative URLs correctly", async () => {
-			if (mockSegments[0]) mockSegments[0].url = "/relative/segment1.mp4";
-			if (mockSegments[1]) mockSegments[1].url = "relative/segment2.mp4";
+			if (mockRepresentation.segments[0]) mockRepresentation.segments[0].url = "/relative/segment1.mp4";
+			if (mockRepresentation.segments[1]) mockRepresentation.segments[1].url = "relative/segment2.mp4";
 
 			const queue = await downloader.download();
 			const mediaEntries = queue.filter((entry) => !entry.destFile.includes("init"));
@@ -149,7 +108,7 @@ describe("SegmentDownloader", () => {
 		});
 
 		it("should handle absolute URLs correctly", async () => {
-			if (mockSegments[0]) mockSegments[0].url = "https://cdn.example.com/segment1.mp4";
+			if (mockRepresentation.segments[0]) mockRepresentation.segments[0].url = "https://cdn.example.com/segment1.mp4";
 
 			const queue = await downloader.download();
 			const mediaEntry = queue.find((entry) => entry.destFile.includes("segment1"));
@@ -160,18 +119,18 @@ describe("SegmentDownloader", () => {
 		it("should set filesystem paths on segments", async () => {
 			await downloader.download();
 
-			expect(mockSegments[0]?.fileSystemPath).toBe(
-				path.resolve("/tmp/download", "video/representation-video-1080p-1920x1080", "0-segment1.mp4"),
+			expect(mockRepresentation.segments[0]?.fileSystemPath).toBe(
+				path.resolve("/tmp/download", "video/representation-video-1-320x240", "1000-segment-1.mp4"),
 			);
-			expect(mockSegments[0]?.initSegmentFilesystemPath).toBe(
-				path.resolve("/tmp/download", "video/representation-video-1080p-1920x1080", "0-init-init.mp4"),
+			expect(mockRepresentation.segments[0]?.initSegmentFilesystemPath).toBe(
+				path.resolve("/tmp/download", "video/representation-video-1-320x240", "1000-init-init.mp4"),
 			);
 		});
 	});
 
 	describe("download", () => {
 		it("should skip download when skipDownload option is true", async () => {
-			mockedCliOpts.getOpts.mockReturnValue({
+			vi.mocked(getOpts).mockReturnValue({
 				manifest: "https://example.com/manifest.mpd",
 				output: "/tmp/download",
 				skipDownload: true, // Boolean flags are true when set
@@ -192,8 +151,9 @@ describe("SegmentDownloader", () => {
 		});
 
 		it("should download segments when skipDownload is false", async () => {
-			// Mock axios response
-			const axiosGetSpy = vi.spyOn(axios, "get").mockResolvedValue({
+			// Reset axios mock and set up test-specific mock
+			vi.mocked(axios.get).mockReset();
+			const axiosGetSpy = vi.mocked(axios.get).mockResolvedValue({
 				data: Buffer.from("fake segment data"),
 			});
 
@@ -210,29 +170,35 @@ describe("SegmentDownloader", () => {
 			expect(fsWriteSpy).toHaveBeenCalledTimes(3);
 
 			// Verify axios calls
-			expect(axiosGetSpy).toHaveBeenCalledWith("https://example.com/init.mp4", {
+			expect(axiosGetSpy).toHaveBeenCalledWith("https://example.com/segment-1.mp4", {
 				responseType: "arraybuffer",
 			});
-			expect(axiosGetSpy).toHaveBeenCalledWith("https://example.com/segment1.mp4", {
+			expect(axiosGetSpy).toHaveBeenCalledWith("https://example.com/segment-2.mp4", {
+				responseType: "arraybuffer",
+			});
+			expect(axiosGetSpy).toHaveBeenCalledWith("https://example.com/init.mp4", {
 				responseType: "arraybuffer",
 			});
 		});
 
-		it("should skip writing file if file already exists", async () => {
+		it("should skip download if file already exists", async () => {
 			// Mock file exists
 			vi.spyOn(fs, "access").mockResolvedValue();
 			const fsWriteSpy = vi.spyOn(fs, "writeFile").mockResolvedValue();
 			const mkdirpSpy = vi.fn().mockResolvedValue(undefined);
 			vi.mocked(mkdirp).mockImplementation(mkdirpSpy);
-			const axiosGetSpy = vi.spyOn(axios, "get").mockResolvedValue({
+
+			// Reset axios mock and set up test-specific mock
+			vi.mocked(axios.get).mockReset();
+			const axiosGetSpy = vi.mocked(axios.get).mockResolvedValue({
 				data: Buffer.from("fake segment data"),
 			});
 
 			await downloader.download();
 
 			expect(mkdirpSpy).toHaveBeenCalledTimes(3);
-			expect(axiosGetSpy).toHaveBeenCalledTimes(3); // Still downloads but skips writing
-			expect(fsWriteSpy).not.toHaveBeenCalled(); // File writing is skipped
+			expect(axiosGetSpy).not.toHaveBeenCalled(); // No download when file exists
+			expect(fsWriteSpy).not.toHaveBeenCalled(); // No file writing when file exists
 		});
 	});
 
@@ -265,7 +231,7 @@ describe("SegmentDownloader", () => {
 
 			for (const testCase of testCases) {
 				// Create a new downloader instance for each test case to avoid state pollution
-				if (mockSegments[0]) mockSegments[0].url = testCase.input;
+				if (mockRepresentation.segments[0]) mockRepresentation.segments[0].url = testCase.input;
 				const newDownloader = new SegmentDownloader(mockManifest);
 				const queue = await newDownloader.download();
 				const entry = queue.find((entry) => entry.destFile.includes("0-segment"));
@@ -277,7 +243,7 @@ describe("SegmentDownloader", () => {
 	describe("edge cases", () => {
 		it("should handle segments without init segments", async () => {
 			// Remove init segment URLs
-			mockSegments.forEach((segment) => {
+			mockRepresentation.segments.forEach((segment) => {
 				delete segment.initSegmentUrl;
 			});
 

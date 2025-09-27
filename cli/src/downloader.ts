@@ -57,9 +57,6 @@ export class SegmentDownloader {
 			})
 			.process(async (download: DownloadEntry) => {
 				await mkdirp(download.destDir);
-				const response = await axios.get(download.url, {
-					responseType: "arraybuffer",
-				});
 
 				const exists = await fs
 					.access(path.resolve(download.destDir, download.destFile), fs.constants.R_OK | fs.constants.W_OK)
@@ -73,6 +70,10 @@ export class SegmentDownloader {
 					}
 					return;
 				}
+
+				const response = await axios.get(download.url, {
+					responseType: "arraybuffer",
+				});
 
 				await fs.writeFile(path.resolve(download.destDir, download.destFile), response.data);
 
