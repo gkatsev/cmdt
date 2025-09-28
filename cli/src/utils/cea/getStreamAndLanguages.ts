@@ -1,4 +1,4 @@
-import type { Descriptor } from "../../manifest-parsers/dash/raw-dash.js";
+import type { Descriptor } from "dash-ts";
 import { CeaSchemeUri } from "../manifest/types.js";
 
 /**

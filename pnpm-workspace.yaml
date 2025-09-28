@@ -2,3 +2,4 @@ packages:
   - 'cli'
   - 'viewer'
   - 'shared'
+  - 'dash-ts'

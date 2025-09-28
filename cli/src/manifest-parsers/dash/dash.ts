@@ -24,7 +24,7 @@ import {
 	type Period,
 	type Representation as RawRepresentation,
 	type SegmentTemplate,
-} from "./raw-dash.js";
+} from "dash-ts";
 export class DashManifest implements ManifestParser {
 	private logger: winston.Logger;
 	private manifest: Manifest;
